@@ -41,7 +41,7 @@ functions:
           authorizer:
             arn: ${env:AWS_AUTHORIZER_ARN}
             managedExternally: false
-            resultTtlInSeconds: 0
+            resultTtlInSeconds: 3600
             identitySource: method.request.header.Authorization
             type: token
 
