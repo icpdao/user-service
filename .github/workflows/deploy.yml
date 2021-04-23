@@ -5,8 +5,8 @@ on:
     branches:
       - feature/*
       - fix/*
-      - develop
-      - main
+      - dev
+      - prod
 
 jobs:
   test:
@@ -54,7 +54,7 @@ jobs:
     needs: [test]
     timeout-minutes: 20
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/feature/fushang318'
+    if: github.ref == 'refs/heads/dev'
 
     steps:
     - uses: actions/checkout@v2
