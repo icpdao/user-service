@@ -1,0 +1,5 @@
+Flask==1.1.2
+pytest-flask==1.2.0
+PyJWT==2.0.1
+cryptography==3.4.7
+requests==2.25.1
