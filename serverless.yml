@@ -1,0 +1,72 @@
+org: icpdao
+app: icpdao
+service: user-service
+
+disabledDeprecations:
+  - CLI_OPTIONS_SCHEMA
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: python3.8
+  lambdaHashingVersion: 20201221
+  environment:
+    API_GATEWAY_BASE_PATH: ${env:API_GATEWAY_BASE_PATH}
+    ICPDAO_GITHUB_APP_CLIENT_ID: ${env:ICPDAO_GITHUB_APP_CLIENT_ID}
+    ICPDAO_GITHUB_APP_CLIENT_SECRET: ${env:ICPDAO_GITHUB_APP_CLIENT_SECRET}
+    ICPDAO_JWT_RSA_PRIVATE_KEY: ${env:ICPDAO_JWT_RSA_PRIVATE_KEY}
+    AWS_AUTHORIZER_ARN: ${env:AWS_AUTHORIZER_ARN}
+  region: us-east-1
+  stage: ${opt:stage}
+  stackName: icpdao-user-servcie-${self:provider.stage}
+  apiName: icpdao-user-servcie-${self:provider.stage}
+  memorySize: 256
+  timeout: 30
+  deploymentBucket:
+    name: icpdao.9527.${self:provider.region}.deploys
+
+functions:
+  app:
+    handler: wsgi_handler.handler
+    events:
+      - http:
+          path: '/github/auth_callback'
+          method: ANY
+          cors: true
+      - http:  
+          path: '{proxy+}'
+          method: ANY
+          cors: true
+          authorizer:
+            arn: ${env:AWS_AUTHORIZER_ARN}
+            managedExternally: false
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: token
+
+custom:
+  wsgi:
+    app: app.app
+    pythonBin: python3 # Some systems with Python3 may require this
+    packRequirements: false
+  pythonRequirements:
+    dockerizePip: non-linux
+  customDomain:
+    domainName: apis.icpdao.co
+    stage: ${self:provider.stage}
+    basePath: ${env:API_GATEWAY_BASE_PATH}
+    endpointType: 'regional'
+    apiType: rest
+    createRoute53Record: false
+    autoDomain: false
+
+plugins:
+  - serverless-wsgi
+  - serverless-python-requirements
+  - serverless-domain-manager
+
+package:
+  patterns:
+    - '!node_modules/**'
+    - '!package-lock.json'
