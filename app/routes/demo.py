@@ -19,12 +19,14 @@ def login():
 def info(name):
     return 'user: ' + name + '!'
 
-@app.route("/head", methods = ['POST', 'GET'])
-def bbbb():
-    headers = request.headers
-    response = ""
-    for k,v in headers.items():
-        response += "\n{}:{}".format(k, v)
-    response += "\n=================================================================="
-    response += "\nserverless.event.requestContext.authorizer:{}".format(request.environ['serverless.event']['requestContext']['authorizer'])
-    return response
+@app.route("/test", methods = ['POST', 'GET'])
+def test():
+    headers = []
+    for k,v in request.headers.items():
+        headers.append("{}:{}".format(k, v))
+    # response += "\n=================================================================="
+    # response += "\nserverless.event.requestContext.authorizer:{}".format(request.environ['serverless.event']['requestContext']['authorizer'])
+    return {
+        'data': request.get_json(),
+        'headers': headers
+    }
