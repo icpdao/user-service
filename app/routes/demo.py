@@ -1,7 +1,7 @@
 from flask import request
 
 from app import app
-
+from app.models.user.user import User
 
 @app.route('/hello')
 def hello():
@@ -17,7 +17,11 @@ def login():
 
 @app.route('/user/info/<name>')
 def info(name):
-    return 'user: ' + name + '!'
+    user = User.objects(nickname=name).first()
+    if not user:
+        user = User(nickname=name).save()
+
+    return user.to_json()
 
 @app.route("/test", methods = ['POST', 'GET'])
 def test():
