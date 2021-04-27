@@ -17,6 +17,7 @@ provider:
     ICPDAO_GITHUB_APP_CLIENT_SECRET: ${env:ICPDAO_GITHUB_APP_CLIENT_SECRET}
     ICPDAO_JWT_RSA_PRIVATE_KEY: ${env:ICPDAO_JWT_RSA_PRIVATE_KEY}
     AWS_AUTHORIZER_ARN: ${env:AWS_AUTHORIZER_ARN}
+    ICPDAO_MONGODB_USER_HOST: ${env:ICPDAO_MONGODB_USER_HOST}
   region: us-east-1
   stage: ${opt:stage}
   stackName: icpdao-user-servcie-${self:provider.stage}
@@ -25,6 +26,11 @@ provider:
   timeout: 30
   deploymentBucket:
     name: icpdao.9527.${self:provider.region}.deploys
+  vpc:
+    securityGroupIds:
+      - sg-1d9d291e
+    subnetIds:
+      - subnet-8bcfb2aa
 
 functions:
   app:
