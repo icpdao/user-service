@@ -30,7 +30,7 @@ provider:
     securityGroupIds:
       - sg-1d9d291e
     subnetIds:
-      - subnet-8bcfb2aa
+      - subnet-0d6c61be4990b97cd
 
 functions:
   app:
