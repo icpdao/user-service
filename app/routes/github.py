@@ -3,10 +3,49 @@ from flask import request
 from app import app
 from app.helpers.github_auth import get_github_access_token_by_code, get_github_user_info_by_access_token
 from app.helpers.jwt import encode_RS256
+from app.models.icpdao.user import User
+from app.models.icpdao.user_github_token import UserGithubToken
 
 from settings import (
     ICPDAO_JWT_RSA_PRIVATE_KEY
 )
+
+
+def create_or_update_user(user_info):
+    user = User.objects(github_login=user_info['login']).first()
+    if user:
+            user.nickname = user_info['name']
+            user.avatar = user_info['avatar_url']
+            user.save()
+    else:
+        user = User(
+            nickname = user_info['name'],
+            github_login = user_info['login'],
+            avatar = user_info['avatar_url']
+        )
+        user.save()
+    return user
+        
+
+def create_or_update_user_github_token(github_login, access_token_info):
+    ugt = UserGithubToken.objects(github_login=github_login).first()
+    if ugt:
+        ugt.access_token = access_token_info["access_token"]
+        ugt.refresh_token = access_token_info["refresh_token"]
+        ugt.expires_in = access_token_info["expires_in"]
+        ugt.refresh_token_expires_in = access_token_info["refresh_token_expires_in"]
+        ugt.save()
+    else:
+        ugt = UserGithubToken(
+            github_login = github_login,
+            access_token = access_token_info["access_token"],
+            refresh_token = access_token_info["refresh_token"],
+            expires_in = access_token_info["expires_in"],
+            refresh_token_expires_in = access_token_info["refresh_token_expires_in"]
+        )
+        ugt.save()
+    return ugt
+
 
 @app.route('/github/auth_callback')
 def github_auth_callback():
@@ -15,11 +54,12 @@ def github_auth_callback():
     access_token = access_token_info['access_token']
     user_info = get_github_user_info_by_access_token(access_token)
 
-    if user_info['id']:
-        # 说明认证成功
-        # TODO 1. 根据  user github id 查找获取创建 user
+    if user_info['login']:
+        user = create_or_update_user(user_info)
+        create_or_update_user_github_token(user_info['login'], access_token_info)
+
         payload = {
-            'user_id': 'usermockid'
+            'user_id': str(user.id)
         }
         token = encode_RS256(payload, ICPDAO_JWT_RSA_PRIVATE_KEY)
         return {
