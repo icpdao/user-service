@@ -1,7 +1,26 @@
-from flask import Flask, make_response
+import os
+
+from flask import Flask, make_response, request
+from app.helpers.route_helper import find_current_user
+
 app = Flask('user-service')
 
 from . import routes
+
+UN_NEED_AUTH_PATH = [
+    '/github/auth_callback'
+]
+
+class UNAUTHError(Exception):
+    pass
+
+@app.before_request
+def before():
+    if request.path not in UN_NEED_AUTH_PATH:
+        print(request.path)
+        if not find_current_user():
+            raise UNAUTHError
+
 
 @app.after_request
 def set_cors(response):
@@ -12,8 +31,20 @@ def set_cors(response):
 
 @app.errorhandler(Exception)
 def internal_error(error):
-    response = make_response({'error': str(error)})
-    return response, 500
+    if type(error) == UNAUTHError:
+        return {
+            "success": True,
+            "errorCode": "401",
+            "errorMessage": 'UNAUTHError',
+        }
+
+    if os.environ.get('IS_UNITEST') == 'yes':
+        raise error
+    return {
+        "success": True,
+        "errorCode": "500",
+        "errorMessage": str(error),
+    }
 
 
 # mongodb
@@ -28,9 +59,9 @@ def init_mongo(mongo_config):
     Connect to mongo database
     mongo_config:
     {
-        'user': {
-            'host': self.settings.ICPDAO_MONGODB_USER_HOST,
-            'alias': 'user',
+        'icpdao': {
+            'host': self.settings.ICPDAO_MONGODB_ICPDAO_HOST,
+            'alias': 'icpdao',
         },
         'xxx': {
             'host': self.settings.ICPDAO_MONGODB_XXX_HOST,
@@ -50,8 +81,8 @@ def disconnect_mongo():
         connection.disconnect(dbalias)
 
 init_mongo({
-    'user': {
-        'host': settings.ICPDAO_MONGODB_USER_HOST,
-        'alias': 'user',
+    'icpdao': {
+        'host': settings.ICPDAO_MONGODB_ICPDAO_HOST,
+        'alias': 'icpdao',
     }
 })

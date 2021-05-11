@@ -1,7 +1,7 @@
 from flask import request
 
 from app import app
-from app.models.user.user import User
+from app.models.icpdao.user import User
 
 @app.route('/hello')
 def hello():
@@ -32,5 +32,6 @@ def test():
     # response += "\nserverless.event.requestContext.authorizer:{}".format(request.environ['serverless.event']['requestContext']['authorizer'])
     return {
         'data': request.get_json(),
-        'headers': headers
+        'headers': headers,
+        'auth': request.environ['serverless.event']['requestContext']['authorizer']
     }

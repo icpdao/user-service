@@ -1,0 +1,18 @@
+FROM python:3.8
+
+
+ENV PATH /usr/local/bin:$PATH
+ENV LANG en_US.UTF-8
+ENV PYTHONIOENCODING utf-8
+ENV PYTHONPATH /work
+ENV NOSE_NOCAPTURE 1
+
+
+RUN mkdir /work
+COPY . /work
+RUN pip install -r /work/requirements.txt
+
+WORKDIR /work
+EXPOSE 5000
+
+CMD ["bash"]

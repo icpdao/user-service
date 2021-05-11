@@ -29,3 +29,15 @@ class User(Document):
     erc20_address = StringField(max_length=42)
     # 创建时间
     create_at = IntField(required=True, default=time.time)
+
+    def update_to_normal(self):
+        self.status = UserStatus.NORMAL.value
+        self.save()
+
+    def update_to_pre_icpper(self):
+        self.status = UserStatus.PRE_ICPPER.value
+        self.save()
+
+    def update_to_icpper(self):
+        self.status = UserStatus.ICPPER.value
+        self.save()

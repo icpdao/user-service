@@ -1,3 +1,5 @@
+import os
+
 from flask import request
 
 from app import app
@@ -50,9 +52,23 @@ def create_or_update_user_github_token(github_login, access_token_info):
 @app.route('/github/auth_callback')
 def github_auth_callback():
     code = request.args.get('code')
-    access_token_info = get_github_access_token_by_code(code)
-    access_token = access_token_info['access_token']
-    user_info = get_github_user_info_by_access_token(access_token)
+
+    if os.environ.get('IS_UNITEST') == 'yes':
+        user_info = {
+            'name': 'name_{}'.format(code),
+            'login': 'login_{}'.format(code),
+            'avatar_url': 'avatar_url_{}'.format(code)
+        }
+        access_token_info = {
+            'access_token': 'access_token_{}'.format(code),
+            'refresh_token': 'refresh_token_{}'.format(code),
+            'expires_in': 3600,
+            'refresh_token_expires_in': 3600
+        }
+    else:
+        access_token_info = get_github_access_token_by_code(code)
+        access_token = access_token_info['access_token']
+        user_info = get_github_user_info_by_access_token(access_token)
 
     if user_info['login']:
         user = create_or_update_user(user_info)
@@ -63,9 +79,12 @@ def github_auth_callback():
         }
         token = encode_RS256(payload, ICPDAO_JWT_RSA_PRIVATE_KEY)
         return {
-            'jwt': token
+            "success": True,
+            "data": {'jwt': token}
         }
     else:
         return {
-            'message': "auth error"
-        }, 401
+            "success": True,
+            "errorCode": "401",
+            "errorMessage": 'UNAUTHError',
+        }

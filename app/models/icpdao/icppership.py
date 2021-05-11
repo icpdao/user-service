@@ -42,8 +42,16 @@ class Icppership(Document):
     # 用户成为 icpper 的时间
     icpper_at = IntField()
 
-
     def accept(self):
-        self.progress = IcppershipProgress.ACCEPT.value
+        if self.progress == IcppershipProgress.PENDING.value:
+            self.progress = IcppershipProgress.ACCEPT.value
+            self.accept_at = int(time.time())
+            self.save()
+
+    def update_to_icpper(self):
+        if self.progress == IcppershipProgress.ICPPER.value:
+            return
+        self.progress = IcppershipProgress.ICPPER.value
+        self.status = IcppershipStatus.ICPPER.value
+        self.icpper_at = int(time.time())
         self.save()
-    
