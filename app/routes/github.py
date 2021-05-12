@@ -14,14 +14,15 @@ from settings import (
 
 
 def create_or_update_user(user_info):
+    nickname = user_info.get('name', user_info['login'])
     user = User.objects(github_login=user_info['login']).first()
     if user:
-            user.nickname = user_info['name']
+            user.nickname = nickname
             user.avatar = user_info['avatar_url']
             user.save()
     else:
         user = User(
-            nickname = user_info['name'],
+            nickname = nickname,
             github_login = user_info['login'],
             avatar = user_info['avatar_url']
         )
