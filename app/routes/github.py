@@ -5,8 +5,9 @@ from flask import request
 from app import app
 from app.helpers.github_auth import get_github_access_token_by_code, get_github_user_info_by_access_token
 from app.helpers.jwt import encode_RS256
-from app.models.icpdao.user import User
+from app.models.icpdao.user import User, UserStatus
 from app.models.icpdao.user_github_token import UserGithubToken
+from app.models.icpdao.icppership import Icppership
 
 from settings import (
     ICPDAO_JWT_RSA_PRIVATE_KEY
@@ -50,6 +51,15 @@ def create_or_update_user_github_token(github_login, access_token_info):
     return ugt
 
 
+def update_user_status_by_icppership(user):
+    if user.status != UserStatus.NORMAL.value:
+        return
+
+    if Icppership.objects(icpper_github_login=user.github_login).first():
+        user.status = UserStatus.PRE_ICPPER.value
+        user.save()
+
+
 @app.route('/github/auth_callback')
 def github_auth_callback():
     code = request.args.get('code')
@@ -74,6 +84,7 @@ def github_auth_callback():
     if user_info['login']:
         user = create_or_update_user(user_info)
         create_or_update_user_github_token(user_info['login'], access_token_info)
+        update_user_status_by_icppership(user)
 
         payload = {
             'user_id': str(user.id)
@@ -85,7 +96,7 @@ def github_auth_callback():
         }
     else:
         return {
-            "success": True,
+            "success": False,
             "errorCode": "401",
             "errorMessage": 'UNAUTHError',
         }

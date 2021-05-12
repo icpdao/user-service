@@ -160,6 +160,39 @@ class TestIcpperships(Base):
             icpper_github_login=user3.github_login
         ).first() == None
 
+    def test_create_and_accept_no_user(self):
+        self.clear_db()
+
+        # 创建 mentor
+        mentor = self.create_icpper_user('mentor')
+
+        res = self.client.post(
+            '/icpperships',
+            headers={'user_id': str(mentor.id)},
+            json={
+                'icpper_github_login': 'login_user1'
+            }
+        )
+        assert res.status_code == 200
+        assert not not res.json['data']
+
+        # 创建 user1
+        user1 = self.create_normal_user('user1')
+        assert user1.status == UserStatus.PRE_ICPPER.value
+
+        # 接受邀请
+        isp = Icppership.objects().first()
+        res = self.client.put(
+            '/icpperships/{}/accept'.format(str(isp.id)),
+            headers={'user_id': str(user1.id)}
+        )
+        assert res.status_code == 200
+        assert not not res.json['data']
+
+        isp = Icppership.objects().first()
+        assert isp.status == IcppershipStatus.PRE_ICPPER.value
+        assert isp.progress == IcppershipProgress.ACCEPT.value
+
 
     def test_get_list_empty(self):
         self.clear_db()
