@@ -35,14 +35,14 @@ def accept(icppership_id):
     icppership = Icppership.objects(id=icppership_id).first()
     if not icppership:
         return {
-            "success": True,
+            "success": False,
             "errorCode": "404",
             "errorMessage": "NOT_FOUND"
         }
 
     if icppership.icpper_github_login != user.github_login:
         return {
-            "success": True,
+            "success": False,
             "errorCode": "403",
             "errorMessage": "NO_ROLE"
         }
@@ -67,14 +67,14 @@ def create():
 
     if user.status == UserStatus.NORMAL.value:
         return {
-            "success": True,
+            "success": False,
             "errorCode": "403",
             "errorMessage": "NO_ROLE"
         }
 
     if Icppership.objects(mentor_github_login = user.github_login).count() >= 2:
         return {
-            "success": True,
+            "success": False,
             "errorCode": "403",
             "errorMessage": "ALREADY_TWO_PRE_ICPPER"
         }
@@ -82,7 +82,7 @@ def create():
     icpper_github_login = request.json.get('icpper_github_login')
     if Icppership.objects(icpper_github_login = icpper_github_login).count() > 0:
         return {
-            "success": True,
+            "success": False,
             "errorCode": "403",
             "errorMessage": "ALREADY_MENTOR"
         }
@@ -94,7 +94,8 @@ def create():
     icppership.save()
 
     icpper = User.objects(github_login=icpper_github_login).first()
-    icpper.update_to_pre_icpper()
+    if icpper:
+        icpper.update_to_pre_icpper()
 
     return {
         "success": True,
@@ -109,14 +110,14 @@ def delete(icppership_id):
     icppership = Icppership.objects(id=icppership_id).first()
     if not icppership:
         return {
-            "success": True,
+            "success": False,
             "errorCode": "404",
             "errorMessage": "NOT_FOUND"
         }
 
     if icppership.mentor_github_login != user.github_login:
         return {
-            "success": True,
+            "success": False,
             "errorCode": "403",
             "errorMessage": "NO_ROLE"
         }

@@ -17,7 +17,6 @@ class UNAUTHError(Exception):
 @app.before_request
 def before():
     if request.path not in UN_NEED_AUTH_PATH:
-        print(request.path)
         if not find_current_user():
             raise UNAUTHError
 
@@ -33,7 +32,7 @@ def set_cors(response):
 def internal_error(error):
     if type(error) == UNAUTHError:
         return {
-            "success": True,
+            "success": False,
             "errorCode": "401",
             "errorMessage": 'UNAUTHError',
         }
@@ -41,7 +40,7 @@ def internal_error(error):
     if os.environ.get('IS_UNITEST') == 'yes':
         raise error
     return {
-        "success": True,
+        "success": False,
         "errorCode": "500",
         "errorMessage": str(error),
     }
