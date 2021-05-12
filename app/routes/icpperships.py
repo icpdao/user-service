@@ -6,15 +6,21 @@ from app.models.icpdao.user import User, UserStatus
 from app.models.icpdao.icppership import Icppership, IcppershipStatus
 
 
-def to_icppership_dict(icppership, icpper):
+def to_icppership_dict(icppership, icpper=None):
+    if icpper:
+        nickname = icpper.nickname
+        github_login = icpper.github_login
+    else:
+        nickname = ""
+        github_login = icppership.icpper_github_login
     return {
         "id":                  str(icppership.id),
         "progress":            icppership.progress,
         "status":              icppership.status, 
         "mentor_github_login": icppership.mentor_github_login,
         "icpper": {
-            "nickname":        icpper.nickname,
-            "github_login":    icpper.github_login,
+            "nickname":        nickname,
+            "github_login":    github_login,
         },
         "create_at":           icppership.create_at,
         "accept_at":           icppership.accept_at, 
@@ -138,7 +144,7 @@ def get_list():
     for icpper in User.objects(github_login__in=icpper_login_list):
         login_2_icpper[icpper.github_login] = icpper
 
-    res = [to_icppership_dict(item, login_2_icpper[item.icpper_github_login]) for item in is_list]
+    res = [to_icppership_dict(item, login_2_icpper.get(item.icpper_github_login, None)) for item in is_list]
 
     return {
         "success": True,
