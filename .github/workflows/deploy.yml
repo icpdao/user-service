@@ -86,6 +86,6 @@ jobs:
         AWS_AUTHORIZER_ARN: ${{secrets.DEV__AWS_AUTHORIZER_ARN}}
         ICPDAO_MONGODB_ICPDAO_HOST: ${{secrets.DEV__ICPDAO_MONGODB_ICPDAO_HOST}}
       run: |
-        npm install -g serverless@2.39.2
+        npm install -g serverless@2.35.0
         npm install
         sls deploy --stage dev
