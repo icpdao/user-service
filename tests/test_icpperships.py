@@ -440,6 +440,31 @@ class TestIcpperships(Base):
         assert user1.status == UserStatus.NORMAL.value
 
 
+    def test_delete_no_user(self):
+        self.clear_db()
+
+        mentor = self.create_icpper_user('mentor')
+
+        res = self.client.post(
+            '/icpperships',
+            headers={'user_id': str(mentor.id)},
+            json={
+                'icpper_github_login': 'login_user1'
+            }
+        )
+        assert res.status_code == 200
+        assert res.json['success'] == True
+        assert not not res.json['data']
+
+        isp = Icppership.objects().first()
+        res = self.client.delete(
+            '/icpperships/{}'.format(str(isp.id)),
+            headers={'user_id': str(mentor.id)}
+        )
+        assert res.status_code == 200
+        assert res.json['success'] == True
+
+
     def test_delete_accept(self):
         # 删除 已经 accept 的邀请 对方从 pre 变成 normal
         self.clear_db()
