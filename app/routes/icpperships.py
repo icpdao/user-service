@@ -126,7 +126,8 @@ def delete(icppership_id):
 
     if icppership.status == IcppershipStatus.PRE_ICPPER.value:
         pre_icpper = User.objects(github_login=icppership.icpper_github_login).first()
-        pre_icpper.update_to_normal()
+        if pre_icpper:
+            pre_icpper.update_to_normal()
 
     return {
         "success": True,
