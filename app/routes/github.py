@@ -15,7 +15,9 @@ from settings import (
 
 
 def create_or_update_user(user_info):
-    nickname = user_info.get('name', user_info['login'])
+    nickname = user_info.get('name', '')
+    if not nickname:
+        nickname = user_info['login']
     user = User.objects(github_login=user_info['login']).first()
     if user:
             user.nickname = nickname
