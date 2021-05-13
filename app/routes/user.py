@@ -38,10 +38,31 @@ def _user_profile_dict(user):
     return res
 
 
-@app.route('/profile')
+@app.route('/profile', methods=['GET'])
 def profile():
     user = get_current_user()
 
+    return {
+        "success": True,
+        "data": _user_profile_dict(user)
+    }
+
+@app.route('/profile', methods=['PUT'])
+def update_profile():
+    user = get_current_user()
+
+    erc20_address = request.json.get('erc20_address')
+    if erc20_address and len(erc20_address) != 42:
+        return {
+            "success": False,
+            "errorCode": "400",
+            "errorMessage": "ERC20_ADDRESS_FORMAT_INVALID"
+        }
+    
+    if erc20_address:
+        user.erc20_address = erc20_address
+
+    user.save()
     return {
         "success": True,
         "data": _user_profile_dict(user)
