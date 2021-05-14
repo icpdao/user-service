@@ -34,7 +34,7 @@ provider:
 
 functions:
   app:
-    handler: wsgi_handler.handler
+    handler: app.main.handler
     events:
       - http:
           path: '/github/auth_callback'
@@ -52,10 +52,6 @@ functions:
             type: token
 
 custom:
-  wsgi:
-    app: app.app
-    pythonBin: python3 # Some systems with Python3 may require this
-    packRequirements: false
   pythonRequirements:
     dockerizePip: non-linux
   customDomain:
@@ -68,7 +64,6 @@ custom:
     autoDomain: false
 
 plugins:
-  - serverless-wsgi
   - serverless-python-requirements
   - serverless-domain-manager
 

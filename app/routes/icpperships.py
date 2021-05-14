@@ -1,9 +1,16 @@
-from flask import request
+from fastapi import Request
 
-from app import app
+from pydantic import BaseModel
+from typing import Optional
+
+from app.main import app
 from app.helpers.route_helper import get_current_user
 from app.models.icpdao.user import User, UserStatus
 from app.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
+
+
+class CreateItem(BaseModel):
+    icpper_github_login: str
 
 
 def to_icppership_dict(icppership, icpper=None):
@@ -28,9 +35,9 @@ def to_icppership_dict(icppership, icpper=None):
     }
 
 
-@app.route('/icpperships/<icppership_id>/accept', methods=['PUT'])
-def accept(icppership_id):
-    user = get_current_user()
+@app.put('/icpperships/{icppership_id}/accept')
+async def accept(icppership_id, request: Request):
+    user = get_current_user(request)
 
     icppership = Icppership.objects(id=icppership_id).first()
     if not icppership:
@@ -71,9 +78,9 @@ def accept(icppership_id):
     }
 
 
-@app.route('/icpperships', methods=['POST'])
-def create():
-    user = get_current_user()
+@app.post('/icpperships')
+async def create(request: Request, item: CreateItem):
+    user = get_current_user(request)
 
     if user.status == UserStatus.NORMAL.value:
         return {
@@ -89,7 +96,7 @@ def create():
             "errorMessage": "ALREADY_TWO_PRE_ICPPER"
         }
 
-    icpper_github_login = request.json.get('icpper_github_login')
+    icpper_github_login = item.icpper_github_login
     if Icppership.objects(icpper_github_login = icpper_github_login).count() > 0:
         return {
             "success": False,
@@ -110,9 +117,9 @@ def create():
     }
 
 
-@app.route('/icpperships/<icppership_id>', methods=['DELETE'])
-def delete(icppership_id):
-    user = get_current_user()
+@app.delete('/icpperships/{icppership_id}')
+async def delete(icppership_id, request: Request):
+    user = get_current_user(request)
 
     icppership = Icppership.objects(id=icppership_id).first()
     if not icppership:
@@ -142,9 +149,9 @@ def delete(icppership_id):
     }
 
 
-@app.route('/icpperships', methods=['GET'])
-def get_list():
-    user = get_current_user()
+@app.get('/icpperships')
+async def get_list(request: Request):
+    user = get_current_user(request)
 
     is_list = [item for item in Icppership.objects(mentor_github_login=str(user.github_login))]
 

@@ -4,7 +4,6 @@ from app.helpers.jwt import encode_RS256, decode_RS256
 
 TESTS_ROOT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
-@pytest.mark.usefixtures('client_class')
 class TestJWT():
     def test_jwt(self):
         public_key = open('{}/rs256/rsa-public-key.pem'.format(TESTS_ROOT_DIR), 'r').read()

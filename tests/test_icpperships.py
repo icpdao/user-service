@@ -6,7 +6,6 @@ from app.models.icpdao.user_github_token import UserGithubToken
 from app.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
 
 
-@pytest.mark.usefixtures('client_class')
 class TestIcpperships(Base):
 
     def test_create_and_accept(self):
@@ -30,22 +29,22 @@ class TestIcpperships(Base):
             icpper_github_login=user1.github_login
         ).first()
 
-        assert res.json['data']['id'] == str(isp.id)
-        assert res.json['data']['progress'] == IcppershipProgress.PENDING.value
-        assert res.json['data']['status'] == IcppershipStatus.PRE_ICPPER.value
-        assert res.json['data']['mentor_github_login'] == isp.mentor_github_login
-        assert res.json['data']['icpper']['github_login'] == isp.icpper_github_login
-        assert res.json['data']['icpper']['nickname'] == user1.nickname
+        assert res.json()['data']['id'] == str(isp.id)
+        assert res.json()['data']['progress'] == IcppershipProgress.PENDING.value
+        assert res.json()['data']['status'] == IcppershipStatus.PRE_ICPPER.value
+        assert res.json()['data']['mentor_github_login'] == isp.mentor_github_login
+        assert res.json()['data']['icpper']['github_login'] == isp.icpper_github_login
+        assert res.json()['data']['icpper']['nickname'] == user1.nickname
 
         res = self.client.get('/profile', headers={'user_id': str(user1.id)})
-        assert res.json['data']['status'] == UserStatus.NORMAL.value
-        assert res.json['data']['icppership']['progress'] == IcppershipProgress.PENDING.value
-        assert res.json['data']['icppership']['status'] == IcppershipStatus.PRE_ICPPER.value
-        assert res.json['data']['icppership']['id'] == str(isp.id)
-        assert res.json['data']['icppership']['mentor']['github_login'] == mentor.github_login
-        assert res.json['data']['icppership']['mentor']['nickname'] == mentor.nickname
-        assert res.json['data']['icppership']['mentor']['avatar'] == mentor.avatar
-        assert res.json['data']['icppership']['mentor']['number_of_instructors'] == 0
+        assert res.json()['data']['status'] == UserStatus.NORMAL.value
+        assert res.json()['data']['icppership']['progress'] == IcppershipProgress.PENDING.value
+        assert res.json()['data']['icppership']['status'] == IcppershipStatus.PRE_ICPPER.value
+        assert res.json()['data']['icppership']['id'] == str(isp.id)
+        assert res.json()['data']['icppership']['mentor']['github_login'] == mentor.github_login
+        assert res.json()['data']['icppership']['mentor']['nickname'] == mentor.nickname
+        assert res.json()['data']['icppership']['mentor']['avatar'] == mentor.avatar
+        assert res.json()['data']['icppership']['mentor']['number_of_instructors'] == 0
 
         # user1 接受 mentor 邀请
         res = self.client.put(
@@ -53,22 +52,22 @@ class TestIcpperships(Base):
             headers={'user_id': str(user1.id)}
         )
         assert res.status_code == 200
-        assert res.json['data']['id'] == str(isp.id)
-        assert res.json['data']['progress'] == IcppershipProgress.ACCEPT.value
-        assert res.json['data']['status'] == IcppershipStatus.PRE_ICPPER.value
-        assert res.json['data']['mentor_github_login'] == isp.mentor_github_login
-        assert res.json['data']['icpper']['github_login'] == isp.icpper_github_login
-        assert res.json['data']['icpper']['nickname'] == user1.nickname
+        assert res.json()['data']['id'] == str(isp.id)
+        assert res.json()['data']['progress'] == IcppershipProgress.ACCEPT.value
+        assert res.json()['data']['status'] == IcppershipStatus.PRE_ICPPER.value
+        assert res.json()['data']['mentor_github_login'] == isp.mentor_github_login
+        assert res.json()['data']['icpper']['github_login'] == isp.icpper_github_login
+        assert res.json()['data']['icpper']['nickname'] == user1.nickname
 
         res = self.client.get('/profile', headers={'user_id': str(user1.id)})
-        assert res.json['data']['status'] == UserStatus.PRE_ICPPER.value
-        assert res.json['data']['icppership']['progress'] == IcppershipProgress.ACCEPT.value
-        assert res.json['data']['icppership']['status'] == IcppershipStatus.PRE_ICPPER.value
-        assert res.json['data']['icppership']['id'] == str(isp.id)
-        assert res.json['data']['icppership']['mentor']['github_login'] == mentor.github_login
-        assert res.json['data']['icppership']['mentor']['nickname'] == mentor.nickname
-        assert res.json['data']['icppership']['mentor']['avatar'] == mentor.avatar
-        assert res.json['data']['icppership']['mentor']['number_of_instructors'] == 0
+        assert res.json()['data']['status'] == UserStatus.PRE_ICPPER.value
+        assert res.json()['data']['icppership']['progress'] == IcppershipProgress.ACCEPT.value
+        assert res.json()['data']['icppership']['status'] == IcppershipStatus.PRE_ICPPER.value
+        assert res.json()['data']['icppership']['id'] == str(isp.id)
+        assert res.json()['data']['icppership']['mentor']['github_login'] == mentor.github_login
+        assert res.json()['data']['icppership']['mentor']['nickname'] == mentor.nickname
+        assert res.json()['data']['icppership']['mentor']['avatar'] == mentor.avatar
+        assert res.json()['data']['icppership']['mentor']['number_of_instructors'] == 0
 
         # 创建 user2 user3 两个用户
         user2 = self.create_normal_user('user2')
@@ -105,11 +104,11 @@ class TestIcpperships(Base):
         assert res.status_code == 200
 
         res = self.client.get('/profile', headers={'user_id': str(user1.id)})
-        assert res.json['data']['status'] == UserStatus.ICPPER.value
-        assert res.json['data']['icppership']['mentor']['number_of_instructors'] == 1
+        assert res.json()['data']['status'] == UserStatus.ICPPER.value
+        assert res.json()['data']['icppership']['mentor']['number_of_instructors'] == 1
 
         res = self.client.get('/profile', headers={'user_id': str(user2.id)})
-        assert res.json['data']['icppership']['progress'] == IcppershipProgress.ACCEPT.value
+        assert res.json()['data']['icppership']['progress'] == IcppershipProgress.ACCEPT.value
 
         # 查询 mentor 的所有 icpperships
         res = self.client.get(
@@ -117,7 +116,7 @@ class TestIcpperships(Base):
             headers={'user_id': str(mentor.id)}
         )
         assert res.status_code == 200
-        assert len(res.json['data']) == 2
+        assert len(res.json()['data']) == 2
 
         isp1 = Icppership.objects(
             mentor_github_login=mentor.github_login,
@@ -127,7 +126,7 @@ class TestIcpperships(Base):
             mentor_github_login=mentor.github_login,
             icpper_github_login=user3.github_login
         ).first()
-        for item in res.json['data']:
+        for item in res.json()['data']:
             if item['id'] not in [str(isp1.id), str(isp3.id)]:
                 assert False
             if item['id'] == str(isp1.id):
@@ -140,7 +139,7 @@ class TestIcpperships(Base):
 
         # mentor 删除邀请 user3
         res = self.client.get('/profile', headers={'user_id': str(user3.id)})
-        assert res.json['data']['status'] == UserStatus.NORMAL.value
+        assert res.json()['data']['status'] == UserStatus.NORMAL.value
 
         isp = Icppership.objects(
             mentor_github_login=mentor.github_login,
@@ -153,7 +152,7 @@ class TestIcpperships(Base):
         assert res.status_code == 200
 
         res = self.client.get('/profile', headers={'user_id': str(user3.id)})
-        assert res.json['data']['status'] == UserStatus.NORMAL.value
+        assert res.json()['data']['status'] == UserStatus.NORMAL.value
 
         assert Icppership.objects(
             mentor_github_login=mentor.github_login,
@@ -174,7 +173,7 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert not not res.json['data']
+        assert not not res.json()['data']
 
         # 创建 user1
         user1 = self.create_normal_user('user1')
@@ -187,7 +186,7 @@ class TestIcpperships(Base):
             headers={'user_id': str(user1.id)}
         )
         assert res.status_code == 200
-        assert not not res.json['data']
+        assert not not res.json()['data']
 
         isp = Icppership.objects().first()
         assert isp.status == IcppershipStatus.PRE_ICPPER.value
@@ -203,7 +202,7 @@ class TestIcpperships(Base):
             headers={'user_id': str(user.id)}
         )
         assert res.status_code == 200
-        assert len(res.json['data']) == 0
+        assert len(res.json()['data']) == 0
 
     def test_create_normal_user(self):
         # 发送邀请 当前用户是普通用户，没有权限
@@ -220,7 +219,7 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['errorCode'] == '403'
+        assert res.json()['errorCode'] == '403'
 
     def test_create_have_mentor(self):
         # 发送邀请 对方已经有 mentor
@@ -238,7 +237,7 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
+        assert res.json()['success'] == True
 
         res = self.client.post(
             '/icpperships',
@@ -248,8 +247,8 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['errorCode'] == '403'
-        assert res.json['errorMessage'] == 'ALREADY_MENTOR'
+        assert res.json()['errorCode'] == '403'
+        assert res.json()['errorMessage'] == 'ALREADY_MENTOR'
 
     def test_create_have_mentor(self):
         # 发送邀请 已经有两个邀请了
@@ -268,7 +267,7 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
+        assert res.json()['success'] == True
 
         res = self.client.post(
             '/icpperships',
@@ -278,7 +277,7 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True        
+        assert res.json()['success'] == True        
 
         res = self.client.post(
             '/icpperships',
@@ -288,8 +287,8 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['errorCode'] == '403'
-        assert res.json['errorMessage'] == 'ALREADY_TWO_PRE_ICPPER'
+        assert res.json()['errorCode'] == '403'
+        assert res.json()['errorMessage'] == 'ALREADY_TWO_PRE_ICPPER'
 
     def test_create_icpper(self):
         # 邀请一个 没有 mentor 的 icpper
@@ -309,7 +308,7 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
+        assert res.json()['success'] == True
 
         icpper = User.objects(github_login=icpper.github_login).first()
         assert icpper.status == UserStatus.ICPPER.value
@@ -326,7 +325,7 @@ class TestIcpperships(Base):
             headers={'user_id': str(icpper.id)}
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
+        assert res.json()['success'] == True
 
         isp = Icppership.objects().first()
 
@@ -354,7 +353,7 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
+        assert res.json()['success'] == True
 
         user = User.objects(github_login=user.github_login).first()
         assert user.status == UserStatus.NORMAL.value
@@ -367,9 +366,9 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == False
-        assert res.json['errorCode'] == '403'
-        assert res.json['errorMessage'] == 'NO_ROLE'
+        assert res.json()['success'] == False
+        assert res.json()['errorCode'] == '403'
+        assert res.json()['errorMessage'] == 'NO_ROLE'
 
 
     def test_accept_404(self):
@@ -383,7 +382,7 @@ class TestIcpperships(Base):
             headers={'user_id': str(user.id)}
         )
         assert res.status_code == 200
-        assert res.json['errorCode'] == '404'
+        assert res.json()['errorCode'] == '404'
 
     def test_accept_no_role(self):
         # 接收邀请 没有权限
@@ -401,7 +400,7 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
+        assert res.json()['success'] == True
 
         isp = Icppership.objects().first()
         res = self.client.put(
@@ -409,8 +408,8 @@ class TestIcpperships(Base):
             headers={'user_id': str(user2.id)}
         )
         assert res.status_code == 200
-        assert res.json['errorCode'] == '403'
-        assert res.json['errorMessage'] == 'NO_ROLE'
+        assert res.json()['errorCode'] == '403'
+        assert res.json()['errorMessage'] == 'NO_ROLE'
 
     def test_access_repeat(self):
         # 接收邀请 重复调用
@@ -427,8 +426,8 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
-        assert not not res.json['data']
+        assert res.json()['success'] == True
+        assert not not res.json()['data']
 
         isp = Icppership.objects().first()
         res = self.client.put(
@@ -436,8 +435,8 @@ class TestIcpperships(Base):
             headers={'user_id': str(user1.id)}
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
-        assert not not res.json['data']
+        assert res.json()['success'] == True
+        assert not not res.json()['data']
 
         isp = Icppership.objects().first()
         res = self.client.put(
@@ -445,8 +444,8 @@ class TestIcpperships(Base):
             headers={'user_id': str(user1.id)}
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
-        assert not not res.json['data']
+        assert res.json()['success'] == True
+        assert not not res.json()['data']
 
     def test_delete_404(self):
         # 删除邀请 404
@@ -459,7 +458,7 @@ class TestIcpperships(Base):
             headers={'user_id': str(user.id)}
         )
         assert res.status_code == 200
-        assert res.json['errorCode'] == '404'
+        assert res.json()['errorCode'] == '404'
 
     def test_delete_no_role(self):
         # 删除邀请 没有权限
@@ -476,7 +475,7 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
+        assert res.json()['success'] == True
 
         isp = Icppership.objects().first()
         res = self.client.delete(
@@ -484,8 +483,8 @@ class TestIcpperships(Base):
             headers={'user_id': str(user1.id)}
         )
         assert res.status_code == 200
-        assert res.json['errorCode'] == '403'
-        assert res.json['errorMessage'] == 'NO_ROLE'
+        assert res.json()['errorCode'] == '403'
+        assert res.json()['errorMessage'] == 'NO_ROLE'
 
     def test_delete_pending(self):
         # 删除 pending 的邀请 对方从 pre 变成 normal
@@ -503,8 +502,8 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
-        assert not not res.json['data']
+        assert res.json()['success'] == True
+        assert not not res.json()['data']
 
         user1 = User.objects(id=str(user1.id)).first()
         assert user1.status == UserStatus.NORMAL.value
@@ -515,7 +514,7 @@ class TestIcpperships(Base):
             headers={'user_id': str(mentor.id)}
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
+        assert res.json()['success'] == True
 
         user1 = User.objects(id=str(user1.id)).first()
         assert user1.status == UserStatus.NORMAL.value
@@ -534,8 +533,8 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
-        assert not not res.json['data']
+        assert res.json()['success'] == True
+        assert not not res.json()['data']
 
         isp = Icppership.objects().first()
         res = self.client.delete(
@@ -543,7 +542,7 @@ class TestIcpperships(Base):
             headers={'user_id': str(mentor.id)}
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
+        assert res.json()['success'] == True
 
 
     def test_delete_accept(self):
@@ -562,8 +561,8 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
-        assert not not res.json['data']
+        assert res.json()['success'] == True
+        assert not not res.json()['data']
 
         user1 = User.objects(id=str(user1.id)).first()
         assert user1.status == UserStatus.NORMAL.value
@@ -583,7 +582,7 @@ class TestIcpperships(Base):
             headers={'user_id': str(mentor.id)}
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
+        assert res.json()['success'] == True
 
         user1 = User.objects(id=str(user1.id)).first()
         assert user1.status == UserStatus.NORMAL.value
@@ -609,8 +608,8 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
-        assert not not res.json['data']
+        assert res.json()['success'] == True
+        assert not not res.json()['data']
 
         user1 = User.objects(id=str(user1.id)).first()
         assert user1.status == UserStatus.NORMAL.value
@@ -624,8 +623,8 @@ class TestIcpperships(Base):
             headers={'user_id': str(user1.id)}
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
-        assert not not res.json['data']
+        assert res.json()['success'] == True
+        assert not not res.json()['data']
         ########################
         res = self.client.post(
             '/icpperships',
@@ -635,8 +634,8 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
-        assert not not res.json['data']
+        assert res.json()['success'] == True
+        assert not not res.json()['data']
 
         user1 = User.objects(id=str(user1.id)).first()
         assert user1.status == UserStatus.PRE_ICPPER.value
@@ -653,8 +652,8 @@ class TestIcpperships(Base):
             headers={'user_id': str(user2.id)}
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
-        assert not not res.json['data']
+        assert res.json()['success'] == True
+        assert not not res.json()['data']
 
         isp = Icppership.objects(
             mentor_github_login = user1.github_login,
@@ -684,7 +683,7 @@ class TestIcpperships(Base):
             headers={'user_id': str(mentor.id)}
         )
         assert res.status_code == 200
-        assert res.json['success'] == True
+        assert res.json()['success'] == True
 
         user1 = User.objects(id=str(user1.id)).first()
         assert user1.status == UserStatus.ICPPER.value
