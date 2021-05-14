@@ -38,7 +38,7 @@ class TestIcpperships(Base):
         assert res.json['data']['icpper']['nickname'] == user1.nickname
 
         res = self.client.get('/profile', headers={'user_id': str(user1.id)})
-        assert res.json['data']['status'] == UserStatus.PRE_ICPPER.value
+        assert res.json['data']['status'] == UserStatus.NORMAL.value
         assert res.json['data']['icppership']['progress'] == IcppershipProgress.PENDING.value
         assert res.json['data']['icppership']['status'] == IcppershipStatus.PRE_ICPPER.value
         assert res.json['data']['icppership']['id'] == str(isp.id)
@@ -140,7 +140,7 @@ class TestIcpperships(Base):
 
         # mentor 删除邀请 user3
         res = self.client.get('/profile', headers={'user_id': str(user3.id)})
-        assert res.json['data']['status'] == UserStatus.PRE_ICPPER.value
+        assert res.json['data']['status'] == UserStatus.NORMAL.value
 
         isp = Icppership.objects(
             mentor_github_login=mentor.github_login,
@@ -291,6 +291,84 @@ class TestIcpperships(Base):
         assert res.json['errorCode'] == '403'
         assert res.json['errorMessage'] == 'ALREADY_TWO_PRE_ICPPER'
 
+    def test_create_icpper(self):
+        # 邀请一个 没有 mentor 的 icpper
+        # 创建 mentor icpper
+        # 创建邀请
+        self.clear_db()
+
+        mentor = self.create_icpper_user('mentor')
+        icpper = self.create_icpper_user('icpper')
+
+        assert icpper.status == UserStatus.ICPPER.value
+        res = self.client.post(
+            '/icpperships',
+            headers={'user_id': str(mentor.id)},
+            json={
+                'icpper_github_login': icpper.github_login
+            }
+        )
+        assert res.status_code == 200
+        assert res.json['success'] == True
+
+        icpper = User.objects(github_login=icpper.github_login).first()
+        assert icpper.status == UserStatus.ICPPER.value
+
+        isp = Icppership.objects().first()
+
+        assert isp.mentor_github_login == mentor.github_login
+        assert isp.icpper_github_login == icpper.github_login
+        assert isp.progress == IcppershipProgress.PENDING.value
+        assert isp.status == IcppershipStatus.PRE_ICPPER.value
+
+        res = self.client.put(
+            '/icpperships/{}/accept'.format(str(isp.id)),
+            headers={'user_id': str(icpper.id)}
+        )
+        assert res.status_code == 200
+        assert res.json['success'] == True
+
+        isp = Icppership.objects().first()
+
+        assert isp.mentor_github_login == mentor.github_login
+        assert isp.icpper_github_login == icpper.github_login
+        assert isp.progress == IcppershipProgress.ICPPER.value
+        assert isp.status == IcppershipStatus.ICPPER.value
+
+    def test_create_no_role(self):
+        # 一个被邀请，但是还没有接收成为 pre icpper 的用户，不能邀请别人
+        self.clear_db()
+
+        mentor = self.create_icpper_user('mentor')
+        user = self.create_normal_user('user')
+        user2 = self.create_normal_user('user2')
+
+        res = self.client.post(
+            '/icpperships',
+            headers={'user_id': str(mentor.id)},
+            json={
+                'icpper_github_login': user.github_login
+            }
+        )
+        assert res.status_code == 200
+        assert res.json['success'] == True
+
+        user = User.objects(github_login=user.github_login).first()
+        assert user.status == UserStatus.NORMAL.value
+
+        res = self.client.post(
+            '/icpperships',
+            headers={'user_id': str(user.id)},
+            json={
+                'icpper_github_login': user2.github_login
+            }
+        )
+        assert res.status_code == 200
+        assert res.json['success'] == False
+        assert res.json['errorCode'] == '403'
+        assert res.json['errorMessage'] == 'NO_ROLE'
+
+
     def test_accept_404(self):
         # 接收邀请 404
         self.clear_db()
@@ -426,7 +504,7 @@ class TestIcpperships(Base):
         assert not not res.json['data']
 
         user1 = User.objects(id=str(user1.id)).first()
-        assert user1.status == UserStatus.PRE_ICPPER.value
+        assert user1.status == UserStatus.NORMAL.value
 
         isp = Icppership.objects().first()
         res = self.client.delete(
@@ -485,7 +563,7 @@ class TestIcpperships(Base):
         assert not not res.json['data']
 
         user1 = User.objects(id=str(user1.id)).first()
-        assert user1.status == UserStatus.PRE_ICPPER.value
+        assert user1.status == UserStatus.NORMAL.value
 
         isp = Icppership.objects().first()
         res = self.client.put(
@@ -508,7 +586,7 @@ class TestIcpperships(Base):
         assert user1.status == UserStatus.NORMAL.value
 
 
-    def test_delete_accept(self):
+    def test_delete_icpper(self):
         # mentor 邀请 user1, user1 成为 pre_icpper
         # user1 邀请 user2
         # user2 接收邀请，user1 成为 icpper
@@ -532,7 +610,19 @@ class TestIcpperships(Base):
         assert not not res.json['data']
 
         user1 = User.objects(id=str(user1.id)).first()
-        assert user1.status == UserStatus.PRE_ICPPER.value
+        assert user1.status == UserStatus.NORMAL.value
+        ########################
+        isp = Icppership.objects(
+            mentor_github_login = mentor.github_login,
+            icpper_github_login = user1.github_login
+        ).first()
+        res = self.client.put(
+            '/icpperships/{}/accept'.format(isp.id),
+            headers={'user_id': str(user1.id)}
+        )
+        assert res.status_code == 200
+        assert res.json['success'] == True
+        assert not not res.json['data']
         ########################
         res = self.client.post(
             '/icpperships',
@@ -549,7 +639,7 @@ class TestIcpperships(Base):
         assert user1.status == UserStatus.PRE_ICPPER.value
 
         user2 = User.objects(id=str(user2.id)).first()
-        assert user2.status == UserStatus.PRE_ICPPER.value
+        assert user2.status == UserStatus.NORMAL.value
         ########################
         isp = Icppership.objects(
             mentor_github_login = user1.github_login,
