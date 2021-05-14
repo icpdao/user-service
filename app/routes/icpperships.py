@@ -3,7 +3,7 @@ from flask import request
 from app import app
 from app.helpers.route_helper import get_current_user
 from app.models.icpdao.user import User, UserStatus
-from app.models.icpdao.icppership import Icppership, IcppershipStatus
+from app.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
 
 
 def to_icppership_dict(icppership, icpper=None):
@@ -47,7 +47,17 @@ def accept(icppership_id):
             "errorMessage": "NO_ROLE"
         }
 
+    if icppership.progress != IcppershipProgress.PENDING.value:
+        return {
+            "success": True,
+            "data": to_icppership_dict(icppership, user)
+        }
+
     icppership.accept()
+    if user.status == UserStatus.NORMAL.value:
+        user.update_to_pre_icpper()
+    elif user.status == UserStatus.ICPPER.value:
+        icppership.update_to_icpper()
 
     icppership_mentor = User.objects(github_login=icppership.mentor_github_login).first()
     if icppership_mentor.status == UserStatus.PRE_ICPPER.value:
@@ -94,9 +104,6 @@ def create():
     icppership.save()
 
     icpper = User.objects(github_login=icpper_github_login).first()
-    if icpper:
-        icpper.update_to_pre_icpper()
-
     return {
         "success": True,
         "data": to_icppership_dict(icppership, icpper)
@@ -124,9 +131,9 @@ def delete(icppership_id):
 
     Icppership.objects(id=icppership_id).delete()
 
-    if icppership.status == IcppershipStatus.PRE_ICPPER.value:
+    if icppership.progress == IcppershipProgress.ACCEPT.value:
         pre_icpper = User.objects(github_login=icppership.icpper_github_login).first()
-        if pre_icpper:
+        if pre_icpper and pre_icpper.status == UserStatus.PRE_ICPPER.value:
             pre_icpper.update_to_normal()
 
     return {
