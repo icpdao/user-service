@@ -1,9 +1,18 @@
-from flask import request
+from fastapi import Request, APIRouter
 
-from app import app
+from pydantic import BaseModel
+from typing import Optional
+
 from app.helpers.route_helper import get_current_user
 from app.models.icpdao.user import User
 from app.models.icpdao.icppership import Icppership, IcppershipStatus
+
+
+router = APIRouter()
+
+
+class UpdateProfileItem(BaseModel):
+    erc20_address: Optional[str] = None
 
 
 def _user_profile_dict(user):
@@ -38,20 +47,20 @@ def _user_profile_dict(user):
     return res
 
 
-@app.route('/profile', methods=['GET'])
-def profile():
-    user = get_current_user()
+@router.get('/profile')
+async def profile(request: Request):
+    user = get_current_user(request)
 
     return {
         "success": True,
         "data": _user_profile_dict(user)
     }
 
-@app.route('/profile', methods=['PUT'])
-def update_profile():
-    user = get_current_user()
 
-    erc20_address = request.json.get('erc20_address')
+@router.put('/profile')
+async def update_profile(request: Request, item: UpdateProfileItem):
+    user = get_current_user(request)
+    erc20_address = item.erc20_address
     if erc20_address and len(erc20_address) != 42:
         return {
             "success": False,

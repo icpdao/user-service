@@ -1,8 +1,7 @@
 import os
 
-from flask import request
+from fastapi import Request, APIRouter
 
-from app import app
 from app.helpers.github_auth import get_github_access_token_by_code, get_github_user_info_by_access_token
 from app.helpers.jwt import encode_RS256
 from app.models.icpdao.user import User, UserStatus
@@ -13,6 +12,7 @@ from settings import (
     ICPDAO_JWT_RSA_PRIVATE_KEY
 )
 
+router = APIRouter()
 
 def create_or_update_user(user_info):
     nickname = user_info.get('name', '')
@@ -62,9 +62,9 @@ def update_user_status_by_icppership(user):
         user.save()
 
 
-@app.route('/github/auth_callback')
-def github_auth_callback():
-    code = request.args.get('code')
+@router.get('/github/auth_callback')
+async def github_auth_callback(request: Request):
+    code = request.query_params.get('code')
 
     if os.environ.get('IS_UNITEST') == 'yes':
         user_info = {
@@ -92,6 +92,7 @@ def github_auth_callback():
             'user_id': str(user.id)
         }
         token = encode_RS256(payload, ICPDAO_JWT_RSA_PRIVATE_KEY)
+
         return {
             "success": True,
             "data": {'jwt': token}
