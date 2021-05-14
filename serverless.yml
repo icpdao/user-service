@@ -45,6 +45,10 @@ functions:
           method: ANY
           cors: true
       - http:
+          path: '/redoc'
+          method: ANY
+          cors: true
+      - http:
           path: '/github/auth_callback'
           method: ANY
           cors: true

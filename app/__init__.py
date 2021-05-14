@@ -6,22 +6,26 @@ from fastapi import FastAPI, Request
 from mangum import Mangum
 from fastapi.responses import JSONResponse
 
-app = FastAPI()
-
 from app.helpers.route_helper import find_current_user
-
 from app.routes import api_router
 
 if os.environ.get('IS_UNITEST') == 'yes':
+    app = FastAPI()
     app.include_router(api_router)
 else:
     prefix = os.path.join('/', settings.API_GATEWAY_BASE_PATH)
+    app = FastAPI(
+        docs_url=os.path.join(prefix, 'docs'),
+        redoc_url=os.path.join(prefix, 'redoc'),
+        openapi_url=os.path.join(prefix, 'openapi.json')
+    )
     app.include_router(api_router, prefix=prefix)
 
 
 UN_NEED_AUTH_PATH = [
     '/openapi.json',
     '/docs',
+    '/redoc',
     '/github/auth_callback'
 ]
 
