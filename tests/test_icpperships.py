@@ -335,6 +335,9 @@ class TestIcpperships(Base):
         assert isp.progress == IcppershipProgress.ICPPER.value
         assert isp.status == IcppershipStatus.ICPPER.value
 
+        icpper = User.objects(github_login=icpper.github_login).first()
+        assert icpper.status == UserStatus.ICPPER.value
+
     def test_create_no_role(self):
         # 一个被邀请，但是还没有接收成为 pre icpper 的用户，不能邀请别人
         self.clear_db()
