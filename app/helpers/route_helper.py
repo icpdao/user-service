@@ -1,5 +1,4 @@
 import os
-from flask import request
 
 from fastapi import Request
 from app.models.icpdao.user import User
