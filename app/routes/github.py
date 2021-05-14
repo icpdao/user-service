@@ -1,8 +1,7 @@
 import os
 
-from fastapi import Request
+from fastapi import Request, APIRouter
 
-from app.main import app
 from app.helpers.github_auth import get_github_access_token_by_code, get_github_user_info_by_access_token
 from app.helpers.jwt import encode_RS256
 from app.models.icpdao.user import User, UserStatus
@@ -13,6 +12,7 @@ from settings import (
     ICPDAO_JWT_RSA_PRIVATE_KEY
 )
 
+router = APIRouter()
 
 def create_or_update_user(user_info):
     nickname = user_info.get('name', '')
@@ -62,7 +62,7 @@ def update_user_status_by_icppership(user):
         user.save()
 
 
-@app.get('/github/auth_callback')
+@router.get('/github/auth_callback')
 async def github_auth_callback(request: Request):
     code = request.query_params.get('code')
 

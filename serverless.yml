@@ -34,8 +34,16 @@ provider:
 
 functions:
   app:
-    handler: app.main.handler
+    handler: app.handler
     events:
+      - http:
+          path: '/openapi.json'
+          method: ANY
+          cors: true
+      - http:
+          path: '/docs'
+          method: ANY
+          cors: true
       - http:
           path: '/github/auth_callback'
           method: ANY

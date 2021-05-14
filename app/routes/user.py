@@ -1,12 +1,14 @@
-from fastapi import Request
+from fastapi import Request, APIRouter
 
 from pydantic import BaseModel
 from typing import Optional
 
-from app.main import app
 from app.helpers.route_helper import get_current_user
 from app.models.icpdao.user import User
 from app.models.icpdao.icppership import Icppership, IcppershipStatus
+
+
+router = APIRouter()
 
 
 class UpdateProfileItem(BaseModel):
@@ -45,7 +47,7 @@ def _user_profile_dict(user):
     return res
 
 
-@app.get('/profile')
+@router.get('/profile')
 async def profile(request: Request):
     user = get_current_user(request)
 
@@ -55,7 +57,7 @@ async def profile(request: Request):
     }
 
 
-@app.put('/profile')
+@router.put('/profile')
 async def update_profile(request: Request, item: UpdateProfileItem):
     user = get_current_user(request)
     erc20_address = item.erc20_address

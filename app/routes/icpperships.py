@@ -1,12 +1,14 @@
-from fastapi import Request
+from fastapi import Request, APIRouter
 
 from pydantic import BaseModel
 from typing import Optional
 
-from app.main import app
 from app.helpers.route_helper import get_current_user
 from app.models.icpdao.user import User, UserStatus
 from app.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
+
+
+router = APIRouter()
 
 
 class CreateItem(BaseModel):
@@ -35,7 +37,7 @@ def to_icppership_dict(icppership, icpper=None):
     }
 
 
-@app.put('/icpperships/{icppership_id}/accept')
+@router.put('/icpperships/{icppership_id}/accept')
 async def accept(icppership_id, request: Request):
     user = get_current_user(request)
 
@@ -78,7 +80,7 @@ async def accept(icppership_id, request: Request):
     }
 
 
-@app.post('/icpperships')
+@router.post('/icpperships')
 async def create(request: Request, item: CreateItem):
     user = get_current_user(request)
 
@@ -117,7 +119,7 @@ async def create(request: Request, item: CreateItem):
     }
 
 
-@app.delete('/icpperships/{icppership_id}')
+@router.delete('/icpperships/{icppership_id}')
 async def delete(icppership_id, request: Request):
     user = get_current_user(request)
 
@@ -149,7 +151,7 @@ async def delete(icppership_id, request: Request):
     }
 
 
-@app.get('/icpperships')
+@router.get('/icpperships')
 async def get_list(request: Request):
     user = get_current_user(request)
 
