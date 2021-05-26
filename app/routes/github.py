@@ -4,9 +4,9 @@ from fastapi import Request, APIRouter
 
 from app.helpers.github_auth import get_github_access_token_by_code, get_github_user_info_by_access_token
 from app.helpers.jwt import encode_RS256
-from app.models.icpdao.user import User, UserStatus
-from app.models.icpdao.user_github_token import UserGithubToken
-from app.models.icpdao.icppership import Icppership
+from app.common.models.icpdao.user import User, UserStatus
+from app.common.models.icpdao.user_github_token import UserGithubToken
+from app.common.models.icpdao.icppership import Icppership
 
 from settings import (
     ICPDAO_JWT_RSA_PRIVATE_KEY

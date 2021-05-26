@@ -11,6 +11,7 @@ ENV NOSE_NOCAPTURE 1
 RUN mkdir /work
 COPY . /work
 RUN pip install -r /work/requirements.txt
+RUN pip install pytest
 RUN pip install uvicorn
 
 WORKDIR /work

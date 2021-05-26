@@ -1,9 +1,9 @@
 from fastapi.testclient import TestClient
 
 from app import app
-from app.models.icpdao.user import User
-from app.models.icpdao.user_github_token import UserGithubToken
-from app.models.icpdao.icppership import Icppership
+from app.common.models.icpdao.user import User
+from app.common.models.icpdao.user_github_token import UserGithubToken
+from app.common.models.icpdao.icppership import Icppership
 
 
 class Base():

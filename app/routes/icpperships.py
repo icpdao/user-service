@@ -3,9 +3,9 @@ from fastapi import Request, APIRouter
 from pydantic import BaseModel
 from typing import Optional
 
-from app.helpers.route_helper import get_current_user
-from app.models.icpdao.user import User, UserStatus
-from app.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
+from app.common.utils.route_helper import get_current_user
+from app.common.models.icpdao.user import User, UserStatus
+from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
 
 
 router = APIRouter()
