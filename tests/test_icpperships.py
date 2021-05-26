@@ -1,9 +1,9 @@
 import pytest
 
 from .base import Base
-from app.models.icpdao.user import User, UserStatus
-from app.models.icpdao.user_github_token import UserGithubToken
-from app.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
+from app.common.models.icpdao.user import User, UserStatus
+from app.common.models.icpdao.user_github_token import UserGithubToken
+from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
 
 
 class TestIcpperships(Base):

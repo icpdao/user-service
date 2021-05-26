@@ -1,7 +1,7 @@
 import pytest
 
-from app.models.icpdao.user import User
-from app.models.icpdao.user_github_token import UserGithubToken
+from app.common.models.icpdao.user import User
+from app.common.models.icpdao.user_github_token import UserGithubToken
 
 from .base import Base
 

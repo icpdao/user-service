@@ -6,8 +6,11 @@ from fastapi import FastAPI, Request
 from mangum import Mangum
 from fastapi.responses import JSONResponse
 
-from app.helpers.route_helper import find_current_user
+from app.common.utils.route_helper import find_current_user
 from app.routes import api_router
+
+# mongodb
+from app.common.models.icpdao import init_mongo
 
 if os.environ.get('IS_UNITEST') == 'yes':
     app = FastAPI()
@@ -77,38 +80,6 @@ async def add_global_process(request: Request, call_next):
 
 handler = Mangum(app)
 
-
-# mongodb
-from mongoengine import connect, connection
-import logging
-
-dbs = {}
-
-def init_mongo(mongo_config):
-    """
-    Connect to mongo database
-    mongo_config:
-    {
-        'icpdao': {
-            'host': self.settings.ICPDAO_MONGODB_ICPDAO_HOST,
-            'alias': 'icpdao',
-        },
-        'xxx': {
-            'host': self.settings.ICPDAO_MONGODB_XXX_HOST,
-            'alias': 'xxx',
-        }
-    }
-    """
-    global dbs
-    for dbname, conn_config in mongo_config.items():
-        alias = conn_config['alias']
-        host = conn_config['host']
-        logging.info('connect mongo {}'.format(alias))
-        dbs[alias] = connect(alias=alias, host=host)
-
-def disconnect_mongo():
-    for dbalias, con in dbs.items():
-        connection.disconnect(dbalias)
 
 init_mongo({
     'icpdao': {
