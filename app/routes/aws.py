@@ -24,7 +24,7 @@ async def upload_s3_assume_role(request: Request):
         }
     else:
         session_name = 'session_{}'.format(user.id)
-        credentials = get_assume_role(ICPDAO_AWS_UPLOAD_S3_ROLE_ARN, get_assume_role, 900)
+        credentials = get_assume_role(ICPDAO_AWS_UPLOAD_S3_ROLE_ARN, session_name, 900)
 
     res = {
         'access_key_id': credentials['AccessKeyId'],
