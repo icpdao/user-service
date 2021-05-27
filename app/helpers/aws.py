@@ -2,6 +2,16 @@ import os
 import boto3
 
 
+def get_assume_role(role_arn, session_name, duration_seconds=900):
+    sts_client = boto3.client('sts')
+    assumed_role_object = sts_client.assume_role(
+        RoleArn=role_arn,
+        RoleSessionName=session_name,
+        DurationSeconds=duration_seconds
+    )
+    credentials = assumed_role_object['Credentials']
+    return credentials
+
 # 普通上传
 def verson_1():
     aws_access_key_id = "XXXX"
