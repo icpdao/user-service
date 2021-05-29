@@ -23,7 +23,8 @@ def _user_profile_dict(user):
         "avatar": user.avatar,
         "status": user.status,
         "erc20_address": user.erc20_address,
-        "icppership": {}
+        "icppership": {},
+        "id": str(user.id)
     }
     if icppership:
         mentor = User.objects(github_login=icppership.mentor_github_login).first()
