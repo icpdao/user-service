@@ -1,5 +1,4 @@
 -r app/common/requirements.txt
 
-python-dotenv==0.17.1
 uvicorn
 pytest
