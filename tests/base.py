@@ -6,7 +6,7 @@ from app.common.models.icpdao.user_github_token import UserGithubToken
 from app.common.models.icpdao.icppership import Icppership
 
 
-class Base():
+class Base:
     client = TestClient(app)
 
     def clear_db(self):

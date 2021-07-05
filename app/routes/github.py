@@ -1,4 +1,5 @@
 import os
+import random
 
 from fastapi import Request, APIRouter
 
@@ -14,28 +15,35 @@ from settings import (
 
 router = APIRouter()
 
+
 def create_or_update_user(user_info):
+    github_login = user_info.get('login')
+    github_user_id = user_info.get('id')
     nickname = user_info.get('name', '')
+    avatar_url = user_info.get('avatar_url', '')
     if not nickname:
-        nickname = user_info['login']
-    user = User.objects(github_login=user_info['login']).first()
+        nickname = github_login
+    user = User.objects(github_user_id=github_user_id).first()
     if user:
-            user.nickname = nickname
-            user.avatar = user_info['avatar_url']
-            user.save()
+        user.nickname = nickname
+        user.github_login = github_login
+        user.avatar = avatar_url
+        user.save()
     else:
         user = User(
-            nickname = nickname,
-            github_login = user_info['login'],
-            avatar = user_info['avatar_url']
+            nickname=nickname,
+            github_login=github_login,
+            github_user_id=github_user_id,
+            avatar=avatar_url
         )
         user.save()
     return user
         
 
-def create_or_update_user_github_token(github_login, access_token_info):
-    ugt = UserGithubToken.objects(github_login=github_login).first()
+def create_or_update_user_github_token(github_user_id, github_login, access_token_info):
+    ugt = UserGithubToken.objects(github_user_id=github_user_id).first()
     if ugt:
+        ugt.github_login = github_login
         ugt.access_token = access_token_info["access_token"]
         ugt.refresh_token = access_token_info["refresh_token"]
         ugt.expires_in = access_token_info["expires_in"]
@@ -43,11 +51,12 @@ def create_or_update_user_github_token(github_login, access_token_info):
         ugt.save()
     else:
         ugt = UserGithubToken(
-            github_login = github_login,
-            access_token = access_token_info["access_token"],
-            refresh_token = access_token_info["refresh_token"],
-            expires_in = access_token_info["expires_in"],
-            refresh_token_expires_in = access_token_info["refresh_token_expires_in"]
+            github_user_id=github_user_id,
+            github_login=github_login,
+            access_token=access_token_info["access_token"],
+            refresh_token=access_token_info["refresh_token"],
+            expires_in=access_token_info["expires_in"],
+            refresh_token_expires_in=access_token_info["refresh_token_expires_in"]
         )
         ugt.save()
     return ugt
@@ -67,7 +76,11 @@ async def github_auth_callback(request: Request):
     code = request.query_params.get('code')
 
     if os.environ.get('IS_UNITEST') == 'yes':
+        random.seed(code)
+        github_user_id = int(random.random() * 10000)
+        random.seed()
         user_info = {
+            'id': github_user_id,
             'name': 'name_{}'.format(code),
             'login': 'login_{}'.format(code),
             'avatar_url': 'avatar_url_{}'.format(code)
@@ -85,7 +98,7 @@ async def github_auth_callback(request: Request):
 
     if user_info['login']:
         user = create_or_update_user(user_info)
-        create_or_update_user_github_token(user_info['login'], access_token_info)
+        create_or_update_user_github_token(user_info['id'], user_info['login'], access_token_info)
         update_user_status_by_icppership(user)
 
         payload = {

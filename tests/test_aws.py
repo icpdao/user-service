@@ -1,8 +1,3 @@
-import pytest
-
-from app.common.models.icpdao.user import User
-from app.common.models.icpdao.user_github_token import UserGithubToken
-
 from .base import Base
 
 
