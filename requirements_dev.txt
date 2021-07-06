@@ -1,0 +1,4 @@
+-r app/common/requirements.txt
+
+uvicorn
+pytest

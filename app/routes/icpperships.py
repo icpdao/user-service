@@ -1,7 +1,6 @@
 from fastapi import Request, APIRouter
 
 from pydantic import BaseModel
-from typing import Optional
 
 from app.common.utils.route_helper import get_current_user
 from app.common.models.icpdao.user import User, UserStatus
@@ -22,11 +21,12 @@ def to_icppership_dict(icppership, icpper=None):
     else:
         nickname = ""
         github_login = icppership.icpper_github_login
+    mentor = User.objects(id=str(icppership.mentor_user_id)).first()
     return {
         "id":                  str(icppership.id),
         "progress":            icppership.progress,
         "status":              icppership.status, 
-        "mentor_github_login": icppership.mentor_github_login,
+        "mentor_github_login": mentor.github_login,
         "icpper": {
             "nickname":        nickname,
             "github_login":    github_login,
@@ -62,16 +62,16 @@ async def accept(icppership_id, request: Request):
             "data": to_icppership_dict(icppership, user)
         }
 
-    icppership.accept()
+    icppership.accept(str(user.id))
     if user.status == UserStatus.NORMAL.value:
         user.update_to_pre_icpper()
     elif user.status == UserStatus.ICPPER.value:
         icppership.update_to_icpper()
 
-    icppership_mentor = User.objects(github_login=icppership.mentor_github_login).first()
+    icppership_mentor = User.objects(id=icppership.mentor_user_id).first()
     if icppership_mentor.status == UserStatus.PRE_ICPPER.value:
         icppership_mentor.update_to_icpper()
-        user_is = Icppership.objects(icpper_github_login=icppership_mentor.github_login).first()
+        user_is = Icppership.objects(icpper_user_id=str(icppership_mentor.id)).first()
         user_is.update_to_icpper()
 
     return {
@@ -91,7 +91,7 @@ async def create(request: Request, item: CreateItem):
             "errorMessage": "NO_ROLE"
         }
 
-    if Icppership.objects(mentor_github_login = user.github_login).count() >= 2:
+    if Icppership.objects(mentor_user_id=str(user.id)).count() >= 2:
         return {
             "success": False,
             "errorCode": "403",
@@ -99,7 +99,7 @@ async def create(request: Request, item: CreateItem):
         }
 
     icpper_github_login = item.icpper_github_login
-    if Icppership.objects(icpper_github_login = icpper_github_login).count() > 0:
+    if Icppership.objects(icpper_github_login=icpper_github_login).count() > 0:
         return {
             "success": False,
             "errorCode": "403",
@@ -107,8 +107,8 @@ async def create(request: Request, item: CreateItem):
         }
 
     icppership = Icppership(
-        mentor_github_login = user.github_login,
-        icpper_github_login = icpper_github_login
+        mentor_user_id=str(user.id),
+        icpper_github_login=icpper_github_login
     )
     icppership.save()
 
@@ -131,7 +131,7 @@ async def delete(icppership_id, request: Request):
             "errorMessage": "NOT_FOUND"
         }
 
-    if icppership.mentor_github_login != user.github_login:
+    if icppership.mentor_user_id != str(user.id):
         return {
             "success": False,
             "errorCode": "403",
@@ -141,7 +141,7 @@ async def delete(icppership_id, request: Request):
     Icppership.objects(id=icppership_id).delete()
 
     if icppership.progress == IcppershipProgress.ACCEPT.value:
-        pre_icpper = User.objects(github_login=icppership.icpper_github_login).first()
+        pre_icpper = User.objects(id=icppership.icpper_user_id).first()
         if pre_icpper and pre_icpper.status == UserStatus.PRE_ICPPER.value:
             pre_icpper.update_to_normal()
 
@@ -155,14 +155,17 @@ async def delete(icppership_id, request: Request):
 async def get_list(request: Request):
     user = get_current_user(request)
 
-    is_list = [item for item in Icppership.objects(mentor_github_login=str(user.github_login))]
+    is_list = Icppership.objects(mentor_user_id=str(user.id)).all()
 
-    icpper_login_list = [item.icpper_github_login for item in is_list]
-    login_2_icpper = {}
-    for icpper in User.objects(github_login__in=icpper_login_list):
-        login_2_icpper[icpper.github_login] = icpper
+    icpper_user_id_list = []
+    for item in is_list:
+        if item.icpper_user_id:
+            icpper_user_id_list.append(item.icpper_user_id)
+    user_id_2_icpper = {}
+    for icpper in User.objects(id__in=icpper_user_id_list):
+        user_id_2_icpper[str(icpper.id)] = icpper
 
-    res = [to_icppership_dict(item, login_2_icpper.get(item.icpper_github_login, None)) for item in is_list]
+    res = [to_icppership_dict(item, user_id_2_icpper.get(item.icpper_user_id, None)) for item in is_list]
 
     return {
         "success": True,

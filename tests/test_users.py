@@ -1,5 +1,3 @@
-import pytest
-
 from app.common.models.icpdao.user import User
 from app.common.models.icpdao.user_github_token import UserGithubToken
 
@@ -58,5 +56,5 @@ class TestUsers(Base):
         assert res.status_code == 200
         assert res.json()['success'] == True
         
-        user = User.objects(github_login=user.github_login).first()
+        user = User.objects(github_user_id=user.github_user_id).first()
         assert user.erc20_address == '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'

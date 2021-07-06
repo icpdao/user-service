@@ -16,7 +16,9 @@ class UpdateProfileItem(BaseModel):
 
 
 def _user_profile_dict(user):
-    icppership = Icppership.objects(icpper_github_login=user.github_login).first()
+    icppership = Icppership.objects(icpper_user_id=str(user.id)).first()
+    if not icppership:
+        icppership = Icppership.objects(icpper_github_login=str(user.github_login)).first()
     res = {
         "nickname": user.nickname,
         "github_login": user.github_login,
@@ -27,10 +29,10 @@ def _user_profile_dict(user):
         "id": str(user.id)
     }
     if icppership:
-        mentor = User.objects(github_login=icppership.mentor_github_login).first()
+        mentor = User.objects(id=icppership.mentor_user_id).first()
 
         number_of_instructors = Icppership.objects(
-            mentor_github_login=mentor.github_login,
+            mentor_user_id=str(mentor.id),
             status=IcppershipStatus.ICPPER.value
         ).count()
 
