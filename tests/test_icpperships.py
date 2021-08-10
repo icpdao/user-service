@@ -1,6 +1,7 @@
 
 from app.common.models.icpdao.user import User, UserStatus
 from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
+from app.routes.icpperships import PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT
 
 from .base import Base
 
@@ -248,45 +249,38 @@ class TestIcpperships(Base):
         assert res.json()['errorCode'] == '403'
         assert res.json()['errorMessage'] == 'ALREADY_MENTOR'
 
-    def test_create_have_mentor_2(self):
-        # 发送邀请 已经有两个邀请了
+    def test_create_with_mentor_limit(self):
+        # 发送邀请 已经有PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT个邀请了
         self.clear_db()
 
         mentor = self.create_icpper_user('mentor')
-        user1 = self.create_normal_user('user1')
-        user2 = self.create_normal_user('user2')
-        user3 = self.create_normal_user('user3')
+        user = self.create_normal_user('user')
+
+        if PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT == -1:
+            return
+
+        for index in range(0, PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT):
+            user_index = self.create_normal_user('user{}'.format(index))
+            res = self.client.post(
+                '/icpperships',
+                headers={'user_id': str(mentor.id)},
+                json={
+                    'icpper_github_login': user_index.github_login
+                }
+            )
+            assert res.status_code == 200
+            assert res.json()['success'] == True
 
         res = self.client.post(
             '/icpperships',
             headers={'user_id': str(mentor.id)},
             json={
-                'icpper_github_login': user1.github_login
-            }
-        )
-        assert res.status_code == 200
-        assert res.json()['success'] == True
-
-        res = self.client.post(
-            '/icpperships',
-            headers={'user_id': str(mentor.id)},
-            json={
-                'icpper_github_login': user2.github_login
-            }
-        )
-        assert res.status_code == 200
-        assert res.json()['success'] == True        
-
-        res = self.client.post(
-            '/icpperships',
-            headers={'user_id': str(mentor.id)},
-            json={
-                'icpper_github_login': user3.github_login
+                'icpper_github_login': user.github_login
             }
         )
         assert res.status_code == 200
         assert res.json()['errorCode'] == '403'
-        assert res.json()['errorMessage'] == 'ALREADY_TWO_PRE_ICPPER'
+        assert res.json()['errorMessage'] == 'EXXEED PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT'
 
     def test_create_icpper(self):
         # 邀请一个 没有 mentor 的 icpper
