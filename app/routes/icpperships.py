@@ -2,6 +2,7 @@ from fastapi import Request, APIRouter
 
 from pydantic import BaseModel
 
+from app.common.models.logic.user_helper import pre_icpper_to_icpper
 from app.common.utils.route_helper import get_current_user
 from app.common.models.icpdao.user import User, UserStatus
 from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
@@ -9,6 +10,7 @@ from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, Ic
 
 router = APIRouter()
 
+PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT = 10
 
 class CreateItem(BaseModel):
     icpper_github_login: str
@@ -68,11 +70,7 @@ async def accept(icppership_id, request: Request):
     elif user.status == UserStatus.ICPPER.value:
         icppership.update_to_icpper()
 
-    icppership_mentor = User.objects(id=icppership.mentor_user_id).first()
-    if icppership_mentor.status == UserStatus.PRE_ICPPER.value:
-        icppership_mentor.update_to_icpper()
-        user_is = Icppership.objects(icpper_user_id=str(icppership_mentor.id)).first()
-        user_is.update_to_icpper()
+    pre_icpper_to_icpper(icppership.mentor_user_id)
 
     return {
         "success": True,
@@ -91,12 +89,13 @@ async def create(request: Request, item: CreateItem):
             "errorMessage": "NO_ROLE"
         }
 
-    if Icppership.objects(mentor_user_id=str(user.id)).count() >= 2:
-        return {
-            "success": False,
-            "errorCode": "403",
-            "errorMessage": "ALREADY_TWO_PRE_ICPPER"
-        }
+    if PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT != -1:
+        if Icppership.objects(mentor_user_id=str(user.id)).count() >= PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT:
+            return {
+                "success": False,
+                "errorCode": "403",
+                "errorMessage": "EXXEED PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT"
+            }
 
     icpper_github_login = item.icpper_github_login
     if Icppership.objects(icpper_github_login=icpper_github_login).count() > 0:
