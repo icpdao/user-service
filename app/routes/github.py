@@ -1,16 +1,20 @@
 import os
 import random
+import time
 
 from fastapi import Request, APIRouter
 
-from app.helpers.github_auth import get_github_access_token_by_code, get_github_user_info_by_access_token
+from app.common.utils.github_rest_api import get_github_user_info_by_access_token, get_expires_at_by_access_token_info, \
+    get_github_access_token_by_code
 from app.helpers.jwt import encode_RS256
 from app.common.models.icpdao.user import User, UserStatus
 from app.common.models.icpdao.user_github_token import UserGithubToken
 from app.common.models.icpdao.icppership import Icppership
 
 from settings import (
-    ICPDAO_JWT_RSA_PRIVATE_KEY
+    ICPDAO_JWT_RSA_PRIVATE_KEY,
+    ICPDAO_GITHUB_APP_CLIENT_ID,
+    ICPDAO_GITHUB_APP_CLIENT_SECRET
 )
 
 router = APIRouter()
@@ -48,6 +52,7 @@ def create_or_update_user_github_token(github_user_id, github_login, access_toke
         ugt.refresh_token = access_token_info["refresh_token"]
         ugt.expires_in = access_token_info["expires_in"]
         ugt.refresh_token_expires_in = access_token_info["refresh_token_expires_in"]
+        ugt.token_at = access_token_info["token_at"]
         ugt.save()
     else:
         ugt = UserGithubToken(
@@ -56,7 +61,8 @@ def create_or_update_user_github_token(github_user_id, github_login, access_toke
             access_token=access_token_info["access_token"],
             refresh_token=access_token_info["refresh_token"],
             expires_in=access_token_info["expires_in"],
-            refresh_token_expires_in=access_token_info["refresh_token_expires_in"]
+            refresh_token_expires_in=access_token_info["refresh_token_expires_in"],
+            token_at=access_token_info["token_at"]
         )
         ugt.save()
     return ugt
@@ -89,14 +95,20 @@ async def github_auth_callback(request: Request):
             'access_token': 'access_token_{}'.format(code),
             'refresh_token': 'refresh_token_{}'.format(code),
             'expires_in': 3600,
-            'refresh_token_expires_in': 3600
+            'refresh_token_expires_in': 3600,
+            'token_at': int(time.time()) - 5
         }
     else:
-        access_token_info = get_github_access_token_by_code(code)
+        access_token_info = get_github_access_token_by_code(
+            ICPDAO_GITHUB_APP_CLIENT_ID,
+            ICPDAO_GITHUB_APP_CLIENT_SECRET,
+            code
+        )
         access_token = access_token_info['access_token']
         user_info = get_github_user_info_by_access_token(access_token)
 
     if user_info['login']:
+        expires_at = get_expires_at_by_access_token_info(access_token_info)
         user = create_or_update_user(user_info)
         create_or_update_user_github_token(user_info['id'], user_info['login'], access_token_info)
         update_user_status_by_icppership(user)
@@ -108,7 +120,7 @@ async def github_auth_callback(request: Request):
 
         return {
             "success": True,
-            "data": {'jwt': token}
+            "data": {'jwt': token, 'expires_at': expires_at}
         }
     else:
         return {
