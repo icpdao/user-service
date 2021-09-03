@@ -21,7 +21,7 @@ class CreateItem(BaseModel):
     icpper_github_login: str
 
 
-def to_icppership_dict(icppership, icpper=None):
+def to_icppership_dict(icppership, icpper=None, icpper_icpper_count=0):
     if icpper:
         nickname = icpper.nickname
         github_login = icpper.github_login
@@ -38,6 +38,7 @@ def to_icppership_dict(icppership, icpper=None):
             "nickname":        nickname,
             "github_login":    github_login,
         },
+        "icpper_icpper_count": icpper_icpper_count,
         "create_at":           icppership.create_at,
         "accept_at":           icppership.accept_at, 
         "icpper_at":           icppership.icpper_at, 
@@ -207,7 +208,18 @@ async def get_list(request: Request):
     for icpper in User.objects(id__in=icpper_user_id_list):
         user_id_2_icpper[str(icpper.id)] = icpper
 
-    res = [to_icppership_dict(item, user_id_2_icpper.get(item.icpper_user_id, None)) for item in is_list]
+    user_id_2__icpper_count = {}
+    data_query = Icppership.objects(
+        progress=IcppershipProgress.ACCEPT.value,
+        status=IcppershipStatus.ICPPER.value,
+        mentor_user_id__in=icpper_user_id_list
+    )
+    for is_item in data_query:
+        user_id = is_item.mentor_user_id
+        user_id_2__icpper_count.setdefault(user_id, 0)
+        user_id_2__icpper_count[user_id] += 1
+
+    res = [to_icppership_dict(item, user_id_2_icpper.get(item.icpper_user_id, None), user_id_2__icpper_count.get(item.icpper_user_id, 0)) for item in is_list]
 
     return {
         "success": True,
