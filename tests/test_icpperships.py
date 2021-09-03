@@ -31,7 +31,7 @@ class TestIcpperships(Base):
 
         assert res.json()['data']['id'] == str(isp.id)
         assert res.json()['data']['progress'] == IcppershipProgress.PENDING.value
-        assert res.json()['data']['status'] == IcppershipStatus.PRE_ICPPER.value
+        assert res.json()['data']['status'] == IcppershipStatus.NORMAL.value
         assert res.json()['data']['mentor_github_login'] == mentor.github_login
         assert res.json()['data']['icpper']['github_login'] == isp.icpper_github_login
         assert res.json()['data']['icpper']['nickname'] == user1.nickname
@@ -39,7 +39,7 @@ class TestIcpperships(Base):
         res = self.client.get('/profile', headers={'user_id': str(user1.id)})
         assert res.json()['data']['status'] == UserStatus.NORMAL.value
         assert res.json()['data']['icppership']['progress'] == IcppershipProgress.PENDING.value
-        assert res.json()['data']['icppership']['status'] == IcppershipStatus.PRE_ICPPER.value
+        assert res.json()['data']['icppership']['status'] == IcppershipStatus.NORMAL.value
         assert res.json()['data']['icppership']['id'] == str(isp.id)
         assert res.json()['data']['icppership']['mentor']['github_login'] == mentor.github_login
         assert res.json()['data']['icppership']['mentor']['nickname'] == mentor.nickname
@@ -131,7 +131,7 @@ class TestIcpperships(Base):
                 assert False
             if item['id'] == str(isp1.id):
                 assert item['id'] == str(isp1.id)
-                assert item['progress'] == IcppershipProgress.ICPPER.value
+                assert item['progress'] == IcppershipProgress.ACCEPT.value
                 assert item['status'] == IcppershipStatus.ICPPER.value
                 assert item['mentor_github_login'] == mentor.github_login
                 assert item['icpper']['github_login'] == isp1.icpper_github_login
@@ -236,7 +236,7 @@ class TestIcpperships(Base):
             }
         )
         assert res.status_code == 200
-        assert res.json()['success'] == True
+        assert res.json()['success'] is True
 
         res = self.client.post(
             '/icpperships',
@@ -311,7 +311,7 @@ class TestIcpperships(Base):
         assert isp.icpper_github_login == icpper.github_login
         assert isp.icpper_user_id is None
         assert isp.progress == IcppershipProgress.PENDING.value
-        assert isp.status == IcppershipStatus.PRE_ICPPER.value
+        assert isp.status == IcppershipStatus.ICPPER.value
 
         res = self.client.put(
             '/icpperships/{}/accept'.format(str(isp.id)),
@@ -325,7 +325,7 @@ class TestIcpperships(Base):
         assert isp.mentor_user_id == str(mentor.id)
         assert isp.icpper_user_id == str(icpper.id)
         assert isp.icpper_github_login == icpper.github_login
-        assert isp.progress == IcppershipProgress.ICPPER.value
+        assert isp.progress == IcppershipProgress.ACCEPT.value
         assert isp.status == IcppershipStatus.ICPPER.value
 
         icpper = User.objects(github_login=icpper.github_login).first()
@@ -363,6 +363,64 @@ class TestIcpperships(Base):
         assert res.json()['success'] == False
         assert res.json()['errorCode'] == '403'
         assert res.json()['errorMessage'] == 'NO_ROLE'
+
+    def _link_mentor_and_icpper(self, mentor, icpper):
+        res = self.client.post(
+            '/icpperships',
+            headers={'user_id': str(mentor.id)},
+            json={
+                'icpper_github_login': icpper.github_login
+            }
+        )
+        assert res.status_code == 200
+        assert res.json()['success'] is True
+
+        isp = Icppership.objects(
+            icpper_github_login=icpper.github_login,
+            mentor_user_id=str(mentor.id)
+        ).first()
+
+        assert isp.icpper_user_id is None
+        assert isp.progress == IcppershipProgress.PENDING.value
+
+        res = self.client.put(
+            '/icpperships/{}/accept'.format(str(isp.id)),
+            headers={'user_id': str(icpper.id)}
+        )
+        assert res.status_code == 200
+        assert res.json()['success'] is True
+
+        isp = Icppership.objects(
+            icpper_github_login=icpper.github_login,
+            mentor_user_id=str(mentor.id)
+        ).first()
+
+        assert isp.mentor_user_id == str(mentor.id)
+        assert isp.icpper_user_id == str(icpper.id)
+        assert isp.icpper_github_login == icpper.github_login
+        assert isp.progress == IcppershipProgress.ACCEPT.value
+        assert isp.status == IcppershipStatus.ICPPER.value
+
+    def test_create_parent_mentor(self):
+        self.clear_db()
+
+        mentor_parent_2 = self.create_icpper_user('mentor_parent_2')
+        mentor_parent_1 = self.create_icpper_user('mentor_parent_1')
+        mentor = self.create_icpper_user('mentor')
+
+        self._link_mentor_and_icpper(mentor_parent_1, mentor)
+        self._link_mentor_and_icpper(mentor_parent_2, mentor_parent_1)
+
+        res = self.client.post(
+            '/icpperships',
+            headers={'user_id': str(mentor.id)},
+            json={
+                'icpper_github_login': mentor_parent_2.github_login
+            }
+        )
+        assert res.status_code == 200
+        assert res.json()['success'] is False
+        assert res.json()['errorMessage'] == "IS_YOUR_PARENT_MENTOR"
 
     def test_accept_404(self):
         # 接收邀请 404
@@ -403,6 +461,31 @@ class TestIcpperships(Base):
         assert res.status_code == 200
         assert res.json()['errorCode'] == '403'
         assert res.json()['errorMessage'] == 'NO_ROLE'
+
+    def test_accept_parent_mentor(self):
+        self.clear_db()
+
+        mentor_parent_2 = self.create_icpper_user('mentor_parent_2')
+        mentor_parent_1 = self.create_icpper_user('mentor_parent_1')
+        mentor = self.create_icpper_user('mentor')
+
+        self._link_mentor_and_icpper(mentor_parent_1, mentor)
+        self._link_mentor_and_icpper(mentor_parent_2, mentor_parent_1)
+
+        icppership = Icppership(
+            mentor_user_id=str(mentor.id),
+            icpper_github_login=mentor_parent_2.github_login
+        )
+        icppership.save()
+
+        res = self.client.put(
+            '/icpperships/{}/accept'.format(str(icppership.id)),
+            headers={'user_id': str(mentor_parent_2.id)}
+        )
+
+        assert res.status_code == 200
+        assert res.json()['success'] is False
+        assert res.json()['errorMessage'] == "IS_YOUR_PARENT_MENTOR"
 
     def test_access_repeat(self):
         # 接收邀请 重复调用
@@ -658,7 +741,7 @@ class TestIcpperships(Base):
             mentor_user_id=str(mentor.id),
             icpper_github_login=user1.github_login
         ).first()
-        assert isp1.progress == IcppershipProgress.ICPPER.value
+        assert isp1.progress == IcppershipProgress.ACCEPT.value
         assert isp1.status == IcppershipStatus.ICPPER.value
         user1 = User.objects(id=str(user1.id)).first()
         assert user1.status == UserStatus.ICPPER.value

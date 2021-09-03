@@ -1,16 +1,21 @@
 from fastapi import Request, APIRouter
 
 from pydantic import BaseModel
+from redis.exceptions import LockNotOwnedError, LockError
 
-from app.common.models.logic.user_helper import pre_icpper_to_icpper
+from app.common.models.logic.user_helper import pre_icpper_to_icpper, icppership_accept, icppership_cancle_accept
 from app.common.utils.route_helper import get_current_user
 from app.common.models.icpdao.user import User, UserStatus
 from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
+from settings import ICPDAO_REDIS_LOCK_DB_CONN
 
 
 router = APIRouter()
 
 PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT = 10
+
+LINK_MENTOR_AND_ICPPER_LOCK_KEY = "lock:LINK_MENTOR_AND_ICPPER_LOCK_KEY"
+
 
 class CreateItem(BaseModel):
     icpper_github_login: str
@@ -64,11 +69,35 @@ async def accept(icppership_id, request: Request):
             "data": to_icppership_dict(icppership, user)
         }
 
-    icppership.accept(str(user.id))
-    if user.status == UserStatus.NORMAL.value:
-        user.update_to_pre_icpper()
-    elif user.status == UserStatus.ICPPER.value:
-        icppership.update_to_icpper()
+    mentor = User.objects(id=icppership.mentor_user_id).first()
+    try:
+        with ICPDAO_REDIS_LOCK_DB_CONN.lock(LINK_MENTOR_AND_ICPPER_LOCK_KEY, timeout=5, blocking_timeout=5) as lock:
+            # 锁内操作
+            mentor_list = find_mentor_list_of_user(mentor)
+            mentor_id_list = [str(user.id) for user in mentor_list]
+            if str(user.id) in mentor_id_list:
+                return {
+                    "success": False,
+                    "errorCode": "403",
+                    "errorMessage": "IS_YOUR_PARENT_MENTOR"
+                }
+
+            icppership_accept(icppership, user)
+    except LockNotOwnedError:
+        # 使用锁超时了
+        icppership_cancle_accept(icppership)
+        return {
+            "success": False,
+            "errorCode": "403",
+            "errorMessage": "TIMEOUT"
+        }
+    except LockError:
+        # 没有获取到锁
+        return {
+            "success": False,
+            "errorCode": "403",
+            "errorMessage": "TIMEOUT"
+        }
 
     pre_icpper_to_icpper(icppership.mentor_user_id)
 
@@ -105,13 +134,26 @@ async def create(request: Request, item: CreateItem):
             "errorMessage": "ALREADY_MENTOR"
         }
 
+    # 找 user 的七个上级
+    # XXX 这里不用锁，是考虑到后续只有用户同意才能最终建立关系，这里只需要拒绝大部分情况即可，不用太严格
+    mentor_list = find_mentor_list_of_user(user)
+    mentor_github_login_list = [user.github_login for user in mentor_list]
+    if icpper_github_login in mentor_github_login_list:
+        return {
+            "success": False,
+            "errorCode": "403",
+            "errorMessage": "IS_YOUR_PARENT_MENTOR"
+        }
+
+    icpper = User.objects(github_login=icpper_github_login).first()
+    status = icpper.status if icpper else IcppershipStatus.NORMAL.value
     icppership = Icppership(
         mentor_user_id=str(user.id),
-        icpper_github_login=icpper_github_login
+        icpper_github_login=icpper_github_login,
+        status=status
     )
     icppership.save()
 
-    icpper = User.objects(github_login=icpper_github_login).first()
     return {
         "success": True,
         "data": to_icppership_dict(icppership, icpper)
@@ -142,7 +184,8 @@ async def delete(icppership_id, request: Request):
     if icppership.progress == IcppershipProgress.ACCEPT.value:
         pre_icpper = User.objects(id=icppership.icpper_user_id).first()
         if pre_icpper and pre_icpper.status == UserStatus.PRE_ICPPER.value:
-            pre_icpper.update_to_normal()
+            pre_icpper.status = UserStatus.NORMAL.value
+            pre_icpper.save()
 
     return {
         "success": True,
@@ -170,3 +213,22 @@ async def get_list(request: Request):
         "success": True,
         "data": res
     }
+
+
+def find_mentor_list_of_user(user):
+    # 找 user 的七个上级
+    mentor_user_id_list = []
+    current_user_id = str(user.id)
+    for i in range(7):
+        icppership = Icppership.objects(
+            icpper_user_id=current_user_id,
+            progress=IcppershipProgress.ACCEPT.value
+        ).first()
+        if not icppership:
+            break
+        mentor_user_id_list.append(icppership.mentor_user_id)
+        current_user_id = icppership.mentor_user_id
+    if len(mentor_user_id_list) > 0:
+        return [user for user in User.objects(id__in=mentor_user_id_list)]
+    else:
+        return []
