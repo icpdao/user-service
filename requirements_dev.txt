@@ -1,4 +1,8 @@
 -r app/common/requirements.txt
 
+mangum==0.11.0
+boto3==1.17.79
+python-dotenv==0.17.1
+redis==3.5.3
 uvicorn
 pytest

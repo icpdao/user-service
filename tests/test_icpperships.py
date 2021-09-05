@@ -1,6 +1,8 @@
 
 from app.common.models.icpdao.user import User, UserStatus
 from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
+from app.common.utils.errors import ICPPER_ALREADY_MENTOR_ERROR, ICPPER_PRE_MENTOR_MAX_ERROR, \
+    COMMON_NOT_PERMISSION_ERROR, ICPPER_LOOP_BACK_ERROR
 from app.routes.icpperships import PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT
 
 from .base import Base
@@ -247,7 +249,7 @@ class TestIcpperships(Base):
         )
         assert res.status_code == 200
         assert res.json()['errorCode'] == '403'
-        assert res.json()['errorMessage'] == 'ALREADY_MENTOR'
+        assert res.json()['errorMessage'] == ICPPER_ALREADY_MENTOR_ERROR
 
     def test_create_with_mentor_limit(self):
         # 发送邀请 已经有PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT个邀请了
@@ -280,7 +282,7 @@ class TestIcpperships(Base):
         )
         assert res.status_code == 200
         assert res.json()['errorCode'] == '403'
-        assert res.json()['errorMessage'] == 'EXXEED PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT'
+        assert res.json()['errorMessage'] == ICPPER_PRE_MENTOR_MAX_ERROR
 
     def test_create_icpper(self):
         # 邀请一个 没有 mentor 的 icpper
@@ -362,7 +364,7 @@ class TestIcpperships(Base):
         assert res.status_code == 200
         assert res.json()['success'] == False
         assert res.json()['errorCode'] == '403'
-        assert res.json()['errorMessage'] == 'NO_ROLE'
+        assert res.json()['errorMessage'] == COMMON_NOT_PERMISSION_ERROR
 
     def _link_mentor_and_icpper(self, mentor, icpper):
         res = self.client.post(
@@ -420,7 +422,7 @@ class TestIcpperships(Base):
         )
         assert res.status_code == 200
         assert res.json()['success'] is False
-        assert res.json()['errorMessage'] == "IS_YOUR_PARENT_MENTOR"
+        assert res.json()['errorMessage'] == ICPPER_LOOP_BACK_ERROR
 
     def test_accept_404(self):
         # 接收邀请 404
@@ -460,7 +462,7 @@ class TestIcpperships(Base):
         )
         assert res.status_code == 200
         assert res.json()['errorCode'] == '403'
-        assert res.json()['errorMessage'] == 'NO_ROLE'
+        assert res.json()['errorMessage'] == COMMON_NOT_PERMISSION_ERROR
 
     def test_accept_parent_mentor(self):
         self.clear_db()
@@ -485,7 +487,7 @@ class TestIcpperships(Base):
 
         assert res.status_code == 200
         assert res.json()['success'] is False
-        assert res.json()['errorMessage'] == "IS_YOUR_PARENT_MENTOR"
+        assert res.json()['errorMessage'] == ICPPER_LOOP_BACK_ERROR
 
     def test_access_repeat(self):
         # 接收邀请 重复调用
@@ -560,7 +562,7 @@ class TestIcpperships(Base):
         )
         assert res.status_code == 200
         assert res.json()['errorCode'] == '403'
-        assert res.json()['errorMessage'] == 'NO_ROLE'
+        assert res.json()['errorMessage'] == COMMON_NOT_PERMISSION_ERROR
 
     def test_delete_pending(self):
         # 删除 pending 的邀请 对方从 pre 变成 normal

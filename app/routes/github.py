@@ -4,6 +4,7 @@ import time
 
 from fastapi import Request, APIRouter
 
+from app.common.utils.errors import COMMON_NOT_AUTH_ERROR
 from app.common.utils.github_rest_api import get_github_user_info_by_access_token, get_expires_at_by_access_token_info, \
     get_github_access_token_by_code
 from app.helpers.jwt import encode_RS256
@@ -126,5 +127,5 @@ async def github_auth_callback(request: Request):
         return {
             "success": False,
             "errorCode": "401",
-            "errorMessage": 'UNAUTHError',
+            "errorMessage": COMMON_NOT_AUTH_ERROR,
         }

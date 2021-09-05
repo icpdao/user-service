@@ -3,6 +3,7 @@ from fastapi import Request, APIRouter
 from pydantic import BaseModel
 from typing import Optional
 
+from app.common.utils.errors import USER_WALLET_FORMAT_INVALID_ERROR
 from app.common.utils.route_helper import get_current_user
 from app.common.models.icpdao.user import User
 from app.common.models.icpdao.icppership import Icppership, IcppershipStatus
@@ -68,7 +69,7 @@ async def update_profile(request: Request, item: UpdateProfileItem):
         return {
             "success": False,
             "errorCode": "400",
-            "errorMessage": "ERC20_ADDRESS_FORMAT_INVALID"
+            "errorMessage": USER_WALLET_FORMAT_INVALID_ERROR
         }
     
     if erc20_address:
