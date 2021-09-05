@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from mangum import Mangum
 from fastapi.responses import JSONResponse
 
+from app.common.utils.errors import COMMON_NOT_AUTH_ERROR
 from app.common.utils.route_helper import find_current_user
 from app.routes import api_router
 
@@ -60,7 +61,7 @@ async def add_global_process(request: Request, call_next):
             return build_response(200, {
                 "success": False,
                 "errorCode": "401",
-                "errorMessage": 'UNAUTHError',
+                "errorMessage": COMMON_NOT_AUTH_ERROR,
             })
         
     try:
