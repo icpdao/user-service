@@ -1,5 +1,6 @@
 from app.common.models.icpdao.user import User
 from app.common.models.icpdao.user_github_token import UserGithubToken
+from app.common.utils.errors import USER_WALLET_FORMAT_INVALID_ERROR
 
 from .base import Base
 
@@ -43,7 +44,7 @@ class TestUsers(Base):
         
         assert res.status_code == 200
         assert res.json()['errorCode'] == '400'
-        assert res.json()['errorMessage'] == 'ERC20_ADDRESS_FORMAT_INVALID'
+        assert res.json()['errorMessage'] == USER_WALLET_FORMAT_INVALID_ERROR
 
         res = self.client.put(
             '/profile', 
