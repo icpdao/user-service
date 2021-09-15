@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from redis.exceptions import LockNotOwnedError, LockError
 from collections import defaultdict
 
+from app.common.models.icpdao.dao import DAO
 from app.common.models.icpdao.token import MentorTokenIncomeStat
 from app.common.models.logic.user_helper import pre_icpper_to_icpper, icppership_accept, icppership_cancle_accept
 from app.common.utils.errors import ICPPER_NOT_FOUND_ERROR, COMMON_NOT_PERMISSION_ERROR, ICPPER_LOOP_BACK_ERROR, \
@@ -241,8 +242,12 @@ async def get_list(request: Request):
     mentor_token_stat = defaultdict(list)
 
     for tis in token_income_stat:
+        dao = DAO.objects(id=tis.dao_id).first()
+        if not dao:
+            continue
         mentor_token_stat[tis.icpper_id].append(dict(
             dao_id=tis.dao_id,
+            dao_name=dao.name,
             token_contract_address=tis.token_contract_address,
             token_name=tis.token_name,
             token_symbol=tis.token_symbol,
