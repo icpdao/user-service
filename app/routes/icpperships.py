@@ -2,13 +2,15 @@ from fastapi import Request, APIRouter
 
 from pydantic import BaseModel
 from redis.exceptions import LockNotOwnedError, LockError
+from collections import defaultdict
 
+from app.common.models.icpdao.token import MentorTokenIncomeStat
 from app.common.models.logic.user_helper import pre_icpper_to_icpper, icppership_accept, icppership_cancle_accept
 from app.common.utils.errors import ICPPER_NOT_FOUND_ERROR, COMMON_NOT_PERMISSION_ERROR, ICPPER_LOOP_BACK_ERROR, \
     COMMON_TIMEOUT_ERROR, ICPPER_PRE_MENTOR_MAX_ERROR, ICPPER_ALREADY_MENTOR_ERROR
 from app.common.utils.route_helper import get_current_user
 from app.common.models.icpdao.user import User, UserStatus
-from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress
+from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress, MentorRelationStat
 from settings import ICPDAO_REDIS_LOCK_DB_CONN
 
 
@@ -23,7 +25,7 @@ class CreateItem(BaseModel):
     icpper_github_login: str
 
 
-def to_icppership_dict(icppership, icpper=None, icpper_icpper_count=0):
+def to_icppership_dict(icppership, icpper=None, icpper_icpper_count=0) -> dict:
     if icpper:
         nickname = icpper.nickname
         github_login = icpper.github_login
@@ -31,6 +33,7 @@ def to_icppership_dict(icppership, icpper=None, icpper_icpper_count=0):
         nickname = ""
         github_login = icppership.icpper_github_login
     mentor = User.objects(id=str(icppership.mentor_user_id)).first()
+
     return {
         "id":                  str(icppership.id),
         "progress":            icppership.progress,
@@ -221,7 +224,33 @@ async def get_list(request: Request):
         user_id_2__icpper_count.setdefault(user_id, 0)
         user_id_2__icpper_count[user_id] += 1
 
-    res = [to_icppership_dict(item, user_id_2_icpper.get(item.icpper_user_id, None), user_id_2__icpper_count.get(item.icpper_user_id, 0)) for item in is_list]
+    relations = MentorRelationStat.objects(
+        mentor_id=str(user.id), icpper_id__in=icpper_user_id_list
+    )
+
+    mentor_relation_stat = {rel.icpper_id: dict(
+        relation=rel.relation,
+        has_reward_icpper_count=rel.has_reward_icpper_count,
+        token_count=rel.token_count) for rel in relations}
+
+    token_income_stat = MentorTokenIncomeStat.objects(
+        mentor_id=str(user.id), icpper_id__in=icpper_user_id_list
+    )
+
+    mentor_token_stat = defaultdict(list)
+
+    for tis in token_income_stat:
+        mentor_token_stat[tis.icpper_id].append(dict(
+            dao_id=tis.dao_id,
+            token_contract_address=tis.token_contract_address,
+            token_name=tis.token_name,
+            token_symbol=tis.token_symbol,
+            total_value=tis.total_value,
+        ))
+
+    icpper_info_list = [to_icppership_dict(item, user_id_2_icpper.get(item.icpper_user_id, None), user_id_2__icpper_count.get(item.icpper_user_id, 0)) for item in is_list]
+
+    res = [{**r, **mentor_relation_stat.get(r['id'], {}), 'token_stat': mentor_token_stat.get(r['id'], [])} for r in icpper_info_list]
 
     return {
         "success": True,
