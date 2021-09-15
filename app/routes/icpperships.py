@@ -40,7 +40,7 @@ def to_icppership_dict(icppership, icpper=None, icpper_icpper_count=0) -> dict:
         "status":              icppership.status, 
         "mentor_github_login": mentor.github_login,
         "icpper": {
-            "id":              icpper.id if icpper else "",
+            "id":              str(icpper.id) if icpper else "",
             "nickname":        nickname,
             "github_login":    github_login,
         },
