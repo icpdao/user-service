@@ -40,6 +40,7 @@ def to_icppership_dict(icppership, icpper=None, icpper_icpper_count=0) -> dict:
         "status":              icppership.status, 
         "mentor_github_login": mentor.github_login,
         "icpper": {
+            "id":              icpper.id if icpper else "",
             "nickname":        nickname,
             "github_login":    github_login,
         },
@@ -250,7 +251,7 @@ async def get_list(request: Request):
 
     icpper_info_list = [to_icppership_dict(item, user_id_2_icpper.get(item.icpper_user_id, None), user_id_2__icpper_count.get(item.icpper_user_id, 0)) for item in is_list]
 
-    res = [{**r, **mentor_relation_stat.get(r['id'], {}), 'token_stat': mentor_token_stat.get(r['id'], [])} for r in icpper_info_list]
+    res = [{**r, **mentor_relation_stat.get(r['icpper']['id'], {}), 'token_stat': mentor_token_stat.get(r['icpper']['id'], [])} for r in icpper_info_list]
 
     return {
         "success": True,
