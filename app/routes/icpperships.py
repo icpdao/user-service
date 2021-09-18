@@ -11,7 +11,8 @@ from app.common.utils.errors import ICPPER_NOT_FOUND_ERROR, COMMON_NOT_PERMISSIO
     COMMON_TIMEOUT_ERROR, ICPPER_PRE_MENTOR_MAX_ERROR, ICPPER_ALREADY_MENTOR_ERROR
 from app.common.utils.route_helper import get_current_user
 from app.common.models.icpdao.user import User, UserStatus
-from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress, MentorRelationStat
+from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress, MentorRelationStat, \
+    MentorLevel7IcpperCountStat
 from settings import ICPDAO_REDIS_LOCK_DB_CONN
 
 
@@ -81,7 +82,7 @@ async def accept(icppership_id, request: Request):
     try:
         with ICPDAO_REDIS_LOCK_DB_CONN.lock(LINK_MENTOR_AND_ICPPER_LOCK_KEY, timeout=5, blocking_timeout=5) as lock:
             # 锁内操作
-            mentor_list = find_mentor_list_of_user(mentor)
+            mentor_list = find_mentor_list_of_user(str(mentor.id))
             mentor_id_list = [str(user.id) for user in mentor_list]
             if str(user.id) in mentor_id_list:
                 return {
@@ -108,6 +109,7 @@ async def accept(icppership_id, request: Request):
         }
 
     pre_icpper_to_icpper(icppership.mentor_user_id)
+    update_icpper_count_stat_for_create_icppership(icppership.mentor_user_id, icppership.icpper_user_id)
 
     return {
         "success": True,
@@ -144,7 +146,7 @@ async def create(request: Request, item: CreateItem):
 
     # 找 user 的七个上级
     # XXX 这里不用锁，是考虑到后续只有用户同意才能最终建立关系，这里只需要拒绝大部分情况即可，不用太严格
-    mentor_list = find_mentor_list_of_user(user)
+    mentor_list = find_mentor_list_of_user(str(user.id))
     mentor_github_login_list = [user.github_login for user in mentor_list]
     if icpper_github_login in mentor_github_login_list:
         return {
@@ -188,6 +190,8 @@ async def delete(icppership_id, request: Request):
         }
 
     Icppership.objects(id=icppership_id).delete()
+
+    update_icpper_count_stat_for_delete_icppership(icppership.mentor_user_id, icppership.icpper_user_id)
 
     if icppership.progress == IcppershipProgress.ACCEPT.value:
         pre_icpper = User.objects(id=icppership.icpper_user_id).first()
@@ -264,10 +268,10 @@ async def get_list(request: Request):
     }
 
 
-def find_mentor_list_of_user(user):
+def find_mentor_list_of_user(user_id):
     # 找 user 的七个上级
     mentor_user_id_list = []
-    current_user_id = str(user.id)
+    current_user_id = user_id
     for i in range(7):
         icppership = Icppership.objects(
             icpper_user_id=current_user_id,
@@ -278,6 +282,338 @@ def find_mentor_list_of_user(user):
         mentor_user_id_list.append(icppership.mentor_user_id)
         current_user_id = icppership.mentor_user_id
     if len(mentor_user_id_list) > 0:
-        return [user for user in User.objects(id__in=mentor_user_id_list)]
+        result = []
+        id_2_user = {}
+        for user in User.objects(id__in=mentor_user_id_list):
+            id_2_user[str(user.id)] = user
+        for user_id in mentor_user_id_list:
+            result.append(id_2_user[user_id])
+        return result
     else:
         return []
+
+
+def update_icpper_count_stat_for_create_icppership(mentor_user_id, icpper_user_id):
+    ####
+    # 更新人数
+
+    # 获取 icpper_user_id 下七层的人数 cache
+    cache_stat = MentorLevel7IcpperCountStat.objects(mentor_id=icpper_user_id).first()
+    level_1_count = 0
+    level_2_count = 0
+    level_3_count = 0
+    level_4_count = 0
+    level_5_count = 0
+    level_6_count = 0
+
+    if cache_stat:
+        level_1_count = cache_stat.level_1_count
+        level_2_count = cache_stat.level_2_count
+        level_3_count = cache_stat.level_3_count
+        level_4_count = cache_stat.level_4_count
+        level_5_count = cache_stat.level_5_count
+        level_6_count = cache_stat.level_6_count
+
+    # 更新 1 mentor_user_id  stat and cache
+    MentorRelationStat.objects(
+        mentor_id=mentor_user_id,
+        icpper_id=icpper_user_id
+    ).update_one(
+        upsert=True,
+        inc__has_reward_icpper_count=1 + level_6_count
+    )
+    MentorLevel7IcpperCountStat.objects(
+        mentor_id=mentor_user_id
+    ).update_one(
+        upsert=True,
+        inc__level_1_count=1,
+        inc__level_2_count=1 + level_1_count,
+        inc__level_3_count=1 + level_2_count,
+        inc__level_4_count=1 + level_3_count,
+        inc__level_5_count=1 + level_4_count,
+        inc__level_6_count=1 + level_5_count,
+        inc__level_7_count=1 + level_6_count
+    )
+
+    mentor_list = find_mentor_list_of_user(mentor_user_id)
+    mentor_list_count = len(mentor_list)
+    level_1_mentor = mentor_list[0] if mentor_list_count >= 1 else None
+    level_2_mentor = mentor_list[1] if mentor_list_count >= 2 else None
+    level_3_mentor = mentor_list[2] if mentor_list_count >= 3 else None
+    level_4_mentor = mentor_list[3] if mentor_list_count >= 4 else None
+    level_5_mentor = mentor_list[4] if mentor_list_count >= 5 else None
+    level_6_mentor = mentor_list[5] if mentor_list_count >= 6 else None
+
+    # 更新 2 mentor_user_id_lev_1 stat and cache
+    if level_1_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_1_mentor.id),
+            icpper_id=mentor_user_id
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=1 + level_5_count
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_1_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_2_count=1,
+            inc__level_3_count=1 + level_1_count,
+            inc__level_4_count=1 + level_2_count,
+            inc__level_5_count=1 + level_3_count,
+            inc__level_6_count=1 + level_4_count,
+            inc__level_7_count=1 + level_5_count
+        )
+
+    # 更新 3 mentor_user_id_lev_2 stat and cache
+    if level_2_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_2_mentor.id),
+            icpper_id=str(level_1_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=1 + level_4_count
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_2_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_3_count=1,
+            inc__level_4_count=1 + level_1_count,
+            inc__level_5_count=1 + level_2_count,
+            inc__level_6_count=1 + level_3_count,
+            inc__level_7_count=1 + level_4_count
+        )
+
+    # 更新 4 mentor_user_id_lev_3 stat and cache
+    if level_3_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_3_mentor.id),
+            icpper_id=str(level_2_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=1 + level_3_count
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_3_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_4_count=1,
+            inc__level_5_count=1 + level_1_count,
+            inc__level_6_count=1 + level_2_count,
+            inc__level_7_count=1 + level_3_count
+        )
+
+    # 更新 5 mentor_user_id_lev_4 stat and cache
+    if level_4_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_4_mentor.id),
+            icpper_id=str(level_3_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=1 + level_2_count
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_4_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_5_count=1,
+            inc__level_6_count=1 + level_1_count,
+            inc__level_7_count=1 + level_2_count
+        )
+
+    # 更新 6 mentor_user_id_lev_5 stat and cache
+    if level_5_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_5_mentor.id),
+            icpper_id=str(level_4_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=1 + level_1_count
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_5_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_6_count=1,
+            inc__level_7_count=1 + level_1_count
+        )
+
+    # 更新 7 mentor_user_id_lev_6 stat and cache
+    if level_6_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_6_mentor.id),
+            icpper_id=str(level_5_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=1
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_6_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_7_count=1
+        )
+
+
+def update_icpper_count_stat_for_delete_icppership(mentor_user_id, icpper_user_id):
+    ####
+    # 更新人数
+
+    # 获取 icpper_user_id 下七层的人数 cache
+    cache_stat = MentorLevel7IcpperCountStat.objects(mentor_id=icpper_user_id).first()
+    level_1_count = 0
+    level_2_count = 0
+    level_3_count = 0
+    level_4_count = 0
+    level_5_count = 0
+    level_6_count = 0
+
+    if cache_stat:
+        level_1_count = cache_stat.level_1_count
+        level_2_count = cache_stat.level_2_count
+        level_3_count = cache_stat.level_3_count
+        level_4_count = cache_stat.level_4_count
+        level_5_count = cache_stat.level_5_count
+        level_6_count = cache_stat.level_6_count
+
+    # 更新 1 mentor_user_id  stat and cache
+    MentorRelationStat.objects(
+        mentor_id=mentor_user_id,
+        icpper_id=icpper_user_id
+    ).update_one(
+        upsert=True,
+        inc__has_reward_icpper_count=-(1 + level_6_count)
+    )
+    MentorLevel7IcpperCountStat.objects(
+        mentor_id=mentor_user_id
+    ).update_one(
+        upsert=True,
+        inc__level_1_count=-1,
+        inc__level_2_count=-(1 + level_1_count),
+        inc__level_3_count=-(1 + level_2_count),
+        inc__level_4_count=-(1 + level_3_count),
+        inc__level_5_count=-(1 + level_4_count),
+        inc__level_6_count=-(1 + level_5_count),
+        inc__level_7_count=-(1 + level_6_count)
+    )
+
+    mentor_list = find_mentor_list_of_user(mentor_user_id)
+    mentor_list_count = len(mentor_list)
+    level_1_mentor = mentor_list[0] if mentor_list_count >= 1 else None
+    level_2_mentor = mentor_list[1] if mentor_list_count >= 2 else None
+    level_3_mentor = mentor_list[2] if mentor_list_count >= 3 else None
+    level_4_mentor = mentor_list[3] if mentor_list_count >= 4 else None
+    level_5_mentor = mentor_list[4] if mentor_list_count >= 5 else None
+    level_6_mentor = mentor_list[5] if mentor_list_count >= 6 else None
+
+    # 更新 2 mentor_user_id_lev_1 stat and cache
+    if level_1_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_1_mentor.id),
+            icpper_id=mentor_user_id
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=-(1 + level_5_count)
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_1_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_2_count=-1,
+            inc__level_3_count=-(1 + level_1_count),
+            inc__level_4_count=-(1 + level_2_count),
+            inc__level_5_count=-(1 + level_3_count),
+            inc__level_6_count=-(1 + level_4_count),
+            inc__level_7_count=-(1 + level_5_count)
+        )
+
+    # 更新 3 mentor_user_id_lev_2 stat and cache
+    if level_2_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_2_mentor.id),
+            icpper_id=str(level_1_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=-(1 + level_4_count)
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_2_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_3_count=-1,
+            inc__level_4_count=-(1 + level_1_count),
+            inc__level_5_count=-(1 + level_2_count),
+            inc__level_6_count=-(1 + level_3_count),
+            inc__level_7_count=-(1 + level_4_count)
+        )
+
+    # 更新 4 mentor_user_id_lev_3 stat and cache
+    if level_3_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_3_mentor.id),
+            icpper_id=str(level_2_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=-(1 + level_3_count)
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_3_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_4_count=-1,
+            inc__level_5_count=-(1 + level_1_count),
+            inc__level_6_count=-(1 + level_2_count),
+            inc__level_7_count=-(1 + level_3_count)
+        )
+
+    # 更新 5 mentor_user_id_lev_4 stat and cache
+    if level_4_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_4_mentor.id),
+            icpper_id=str(level_3_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=-(1 + level_2_count)
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_4_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_5_count=-1,
+            inc__level_6_count=-(1 + level_1_count),
+            inc__level_7_count=-(1 + level_2_count)
+        )
+
+    # 更新 6 mentor_user_id_lev_5 stat and cache
+    if level_5_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_5_mentor.id),
+            icpper_id=str(level_4_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=-(1 + level_1_count)
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_5_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_6_count=-1,
+            inc__level_7_count=-(1 + level_1_count)
+        )
+
+    # 更新 7 mentor_user_id_lev_6 stat and cache
+    if level_6_mentor:
+        MentorRelationStat.objects(
+            mentor_id=str(level_6_mentor.id),
+            icpper_id=str(level_5_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__has_reward_icpper_count=-1
+        )
+        MentorLevel7IcpperCountStat.objects(
+            mentor_id=str(level_6_mentor.id)
+        ).update_one(
+            upsert=True,
+            inc__level_7_count=-1
+        )
