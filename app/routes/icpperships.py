@@ -191,13 +191,20 @@ async def delete(icppership_id, request: Request):
 
     Icppership.objects(id=icppership_id).delete()
 
-    update_icpper_count_stat_for_delete_icppership(icppership.mentor_user_id, icppership.icpper_user_id)
-
     if icppership.progress == IcppershipProgress.ACCEPT.value:
         pre_icpper = User.objects(id=icppership.icpper_user_id).first()
         if pre_icpper and pre_icpper.status == UserStatus.PRE_ICPPER.value:
             pre_icpper.status = UserStatus.NORMAL.value
             pre_icpper.save()
+
+        update_icpper_count_stat_for_delete_icppership(icppership.mentor_user_id, icppership.icpper_user_id)
+        mrs = MentorRelationStat.objects(
+            mentor_id=icppership.mentor_user_id,
+            icpper_id=icppership.icpper_user_id
+        ).first()
+        if mrs:
+            mrs.relation = False
+            mrs.save()
 
     return {
         "success": True,
