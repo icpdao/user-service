@@ -23,6 +23,7 @@ def _user_profile_dict(user):
     res = {
         "nickname": user.nickname,
         "github_login": user.github_login,
+        'github_user_id': user.github_user_id,
         "avatar": user.avatar,
         "status": user.status,
         "erc20_address": user.erc20_address,
