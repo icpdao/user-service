@@ -198,13 +198,6 @@ async def delete(icppership_id, request: Request):
             pre_icpper.save()
 
         update_icpper_count_stat_for_delete_icppership(icppership.mentor_user_id, icppership.icpper_user_id)
-        mrs = MentorRelationStat.objects(
-            mentor_id=icppership.mentor_user_id,
-            icpper_id=icppership.icpper_user_id
-        ).first()
-        if mrs:
-            mrs.relation = False
-            mrs.save()
 
     return {
         "success": True,
@@ -327,7 +320,8 @@ def update_icpper_count_stat_for_create_icppership(mentor_user_id, icpper_user_i
         icpper_id=icpper_user_id
     ).update_one(
         upsert=True,
-        inc__has_reward_icpper_count=1 + level_6_count
+        relation=True,
+        has_reward_icpper_count=1 + level_6_count
     )
     MentorLevel7IcpperCountStat.objects(
         mentor_id=mentor_user_id
@@ -490,7 +484,8 @@ def update_icpper_count_stat_for_delete_icppership(mentor_user_id, icpper_user_i
         icpper_id=icpper_user_id
     ).update_one(
         upsert=True,
-        inc__has_reward_icpper_count=-(1 + level_6_count)
+        relation=False,
+        has_reward_icpper_count=1 + level_6_count
     )
     MentorLevel7IcpperCountStat.objects(
         mentor_id=mentor_user_id
