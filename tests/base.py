@@ -1,18 +1,16 @@
 from fastapi.testclient import TestClient
 
+from mongoengine.connection import get_db
+
 from app import app
 from app.common.models.icpdao.user import User, UserStatus
-from app.common.models.icpdao.user_github_token import UserGithubToken
-from app.common.models.icpdao.icppership import Icppership
 
 
 class Base:
     client = TestClient(app)
 
     def clear_db(self):
-        User.drop_collection()
-        UserGithubToken.drop_collection()
-        Icppership.drop_collection()
+        get_db('icpdao').client.drop_database('icpdao')
 
     def create_icpper_user(self, code='user'):
         assert self.client.get('/github/auth_callback?code={}'.format(code)).status_code == 200
