@@ -128,7 +128,7 @@ class TestIcpperships(Base):
             mentor_user_id=str(mentor.id),
             icpper_github_login=user3.github_login
         ).first()
-        for item in res.json()['data']:
+        for item in res.json()['data']['icpperships']:
             if item['id'] not in [str(isp1.id), str(isp3.id)]:
                 assert False
             if item['id'] == str(isp1.id):
@@ -203,7 +203,8 @@ class TestIcpperships(Base):
             headers={'user_id': str(user.id)}
         )
         assert res.status_code == 200
-        assert len(res.json()['data']) == 0
+        assert len(res.json()['data']['icpperships']) == 0
+        assert res.json()['data']['pre_mentor_icppership_count_limit'] > 0
 
     def test_create_normal_user(self):
         # 发送邀请 当前用户是普通用户，没有权限
