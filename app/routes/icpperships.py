@@ -3,6 +3,7 @@ from fastapi import Request, APIRouter
 from pydantic import BaseModel
 from redis.exceptions import LockNotOwnedError, LockError
 from collections import defaultdict
+from mongoengine import Q
 
 from app.common.models.icpdao.dao import DAO
 from app.common.models.icpdao.token import MentorTokenIncomeStat
@@ -129,7 +130,9 @@ async def create(request: Request, item: CreateItem):
         }
 
     if PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT != -1:
-        if Icppership.objects(mentor_user_id=str(user.id)).count() >= PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT:
+        query1 = Q(mentor_user_id=str(user.id), progress=IcppershipProgress.PENDING.value)
+        query2 = Q(mentor_user_id=str(user.id), progress=IcppershipProgress.ACCEPT.value, status=IcppershipStatus.PRE_ICPPER.value)
+        if Icppership.objects(query1 | query2).count() >= PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT:
             return {
                 "success": False,
                 "errorCode": "403",
