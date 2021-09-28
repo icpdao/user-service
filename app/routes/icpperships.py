@@ -267,7 +267,10 @@ async def get_list(request: Request):
 
     return {
         "success": True,
-        "data": res
+        "data": {
+            "icpperships": res,
+            "pre_mentor_icppership_count_limit": PRE_MENTOR_ICPPERSHIP_COUNT_LIMIT
+        }
     }
 
 
