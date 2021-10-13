@@ -6,6 +6,7 @@ from collections import defaultdict
 from mongoengine import Q
 
 from app.common.models.icpdao.dao import DAO
+from app.common.models.icpdao.job import Job, JobStatusEnum
 from app.common.models.icpdao.token import MentorTokenIncomeStat
 from app.common.models.logic.user_helper import pre_icpper_to_icpper, icppership_accept, icppership_cancle_accept
 from app.common.utils.errors import ICPPER_NOT_FOUND_ERROR, COMMON_NOT_PERMISSION_ERROR, ICPPER_LOOP_BACK_ERROR, \
@@ -111,6 +112,11 @@ async def accept(icppership_id, request: Request):
 
     pre_icpper_to_icpper(icppership.mentor_user_id)
     update_icpper_count_stat_for_create_icppership(icppership.mentor_user_id, icppership.icpper_user_id)
+
+    job = Job.objects(status__ne=JobStatusEnum.AWAITING_MERGER.value, user_id=icppership.icpper_user_id).first()
+    dao = DAO.objects(owner_id=icppership.icpper_user_id).first()
+    if dao or job:
+        pre_icpper_to_icpper(icppership.icpper_user_id)
 
     return {
         "success": True,
