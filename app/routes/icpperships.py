@@ -242,10 +242,17 @@ async def get_list(request: Request, token_chain_id: str = ICPDAO_MINT_TOKEN_ETH
         mentor_id=str(user.id), icpper_id__in=icpper_user_id_list
     )
 
-    mentor_relation_stat = {rel.icpper_id: dict(
-        relation=rel.relation,
-        has_reward_icpper_count=rel.has_reward_icpper_count,
-        token_count=rel.token_count) for rel in relations}
+    mentor_relation_stat = dict()
+
+    for rel in relations:
+        mentor_relation_stat[rel.icpper_id] = dict(
+            relation=rel.relation,
+            has_reward_icpper_count=rel.has_reward_icpper_count,
+            token_count=0
+        )
+        token_count_record = rel.token_stat.filter(token_chain_id=token_chain_id).first()
+        if token_count_record:
+            mentor_relation_stat[rel.icpper_id]['token_count'] = token_count_record.token_count
 
     token_income_stat = MentorTokenIncomeStat.objects(
         mentor_id=str(user.id), icpper_id__in=icpper_user_id_list, token_chain_id=token_chain_id
