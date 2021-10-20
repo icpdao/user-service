@@ -15,8 +15,7 @@ from app.common.utils.route_helper import get_current_user
 from app.common.models.icpdao.user import User, UserStatus
 from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress, MentorRelationStat, \
     MentorLevel7IcpperCountStat
-from settings import ICPDAO_REDIS_LOCK_DB_CONN
-
+from settings import ICPDAO_REDIS_LOCK_DB_CONN, ICPDAO_MINT_TOKEN_ETH_CHAIN_ID
 
 router = APIRouter()
 
@@ -215,7 +214,7 @@ async def delete(icppership_id, request: Request):
 
 
 @router.get('/icpperships')
-async def get_list(request: Request):
+async def get_list(request: Request, token_chain_id: str = ICPDAO_MINT_TOKEN_ETH_CHAIN_ID):
     user = get_current_user(request)
 
     is_list = Icppership.objects(mentor_user_id=str(user.id)).all()
@@ -249,7 +248,7 @@ async def get_list(request: Request):
         token_count=rel.token_count) for rel in relations}
 
     token_income_stat = MentorTokenIncomeStat.objects(
-        mentor_id=str(user.id), icpper_id__in=icpper_user_id_list
+        mentor_id=str(user.id), icpper_id__in=icpper_user_id_list, token_chain_id=token_chain_id
     )
 
     mentor_token_stat = defaultdict(list)
