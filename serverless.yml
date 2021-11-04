@@ -24,6 +24,7 @@ provider:
     ICPDAO_MONGODB_ICPDAO_HOST: ${env:ICPDAO_MONGODB_ICPDAO_HOST}
     ICPDAO_REDIS_LOCK_DB_URL: ${env:ICPDAO_REDIS_LOCK_DB_URL}
     ICPDAO_MINT_TOKEN_ETH_CHAIN_ID: ${env:ICPDAO_MINT_TOKEN_ETH_CHAIN_ID}
+    ICPDAO_FRONTEND_URL: ${env:ICPDAO_FRONTEND_URL}
   region: us-east-1
   stage: ${opt:stage}
   stackName: icpdao-user-servcie-${self:provider.stage}
@@ -64,7 +65,12 @@ functions:
           path: '/github/auth_callback'
           method: ANY
           cors: true
-      - http:  
+      - http:
+          path: '/app/{proxy+}'
+          method: ANY
+          cors: true
+          authorizer: aws_iam
+      - http:
           path: '{proxy+}'
           method: ANY
           cors: true
