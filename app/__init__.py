@@ -56,7 +56,7 @@ def build_response(status_code, content):
 async def add_global_process(request: Request, call_next):
     # aws lambda 环境有 users 前缀
     path = request.url.path.split('users')[-1]
-    if path not in UN_NEED_AUTH_PATH:
+    if path.startswith('/app') is False and path not in UN_NEED_AUTH_PATH:
         if not find_current_user(request):
             return build_response(200, {
                 "success": False,
@@ -88,3 +88,7 @@ init_mongo({
         'alias': 'icpdao',
     }
 })
+
+if __name__ == '__main__':
+    import uvicorn
+    uvicorn.run(app='app:app', port=8087, reload=True)
