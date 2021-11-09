@@ -98,7 +98,7 @@ async def discord_bind(bind_id: str, request: Request, background_tasks: Backgro
             "errorMessage": BIND_ACCOUNT_DISCORD_NOT_FOUND
         }
 
-    bind_discord = str(bind_discord)
+    bind_discord = bind_discord.decode('utf-8')
     user = get_current_user(request)
     if not user:
         return {
