@@ -57,6 +57,10 @@ jobs:
         ICPDAO_REDIS_LOCK_DB_URL: redis://:@127.0.0.1:6379/0
         ICPDAO_MINT_TOKEN_ETH_CHAIN_ID: "3"
         ICPDAO_FRONTEND_URL: "https://dev.app.icpdao.co"
+        ICPDAO_DISCORD_BOT_TOKEN: "xxx"
+        ICPDAO_DISCORD_GUILD: "xxx"
+        ICPDAO_DISCORD_ICPPER_ROLEID: "xxx"
+        ICPDAO_DISCORD_NORMAL_ROLEID: "xxx"
       run: |
         npm install
         pip install -r requirements.txt
@@ -110,6 +114,10 @@ jobs:
         ICPDAO_REDIS_LOCK_DB_URL: ${{secrets.DEV__ICPDAO_REDIS_LOCK_DB_URL}}
         ICPDAO_MINT_TOKEN_ETH_CHAIN_ID: ${{secrets.DEV__ICPDAO_MINT_TOKEN_ETH_CHAIN_ID}}
         ICPDAO_FRONTEND_URL: "https://dev.app.icpdao.co"
+        ICPDAO_DISCORD_BOT_TOKEN: ${{secrets.DEV__ICPDAO_DISCORD_BOT_TOKEN}}
+        ICPDAO_DISCORD_GUILD: "818683408958881854"
+        ICPDAO_DISCORD_ICPPER_ROLEID: "846204915755515914"
+        ICPDAO_DISCORD_NORMAL_ROLEID: "907654774592245800"
       run: |
         npm install -g serverless@2.35.0
         npm install
@@ -162,6 +170,10 @@ jobs:
         ICPDAO_REDIS_LOCK_DB_URL: ${{secrets.PROD__ICPDAO_REDIS_LOCK_DB_URL}}
         ICPDAO_MINT_TOKEN_ETH_CHAIN_ID: ${{secrets.PROD__ICPDAO_MINT_TOKEN_ETH_CHAIN_ID}}
         ICPDAO_FRONTEND_URL: "https://app.icpdao.co"
+        ICPDAO_DISCORD_BOT_TOKEN: ${{secrets.PROD__ICPDAO_DISCORD_BOT_TOKEN}}
+        ICPDAO_DISCORD_GUILD: "818683408958881854"
+        ICPDAO_DISCORD_ICPPER_ROLEID: "846204915755515914"
+        ICPDAO_DISCORD_NORMAL_ROLEID: "907654774592245800"
       run: |
         npm install -g serverless@2.35.0
         npm install

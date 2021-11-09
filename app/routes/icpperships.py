@@ -1,4 +1,4 @@
-from fastapi import Request, APIRouter
+from fastapi import Request, APIRouter, BackgroundTasks
 
 from pydantic import BaseModel
 from redis.exceptions import LockNotOwnedError, LockError
@@ -15,7 +15,9 @@ from app.common.utils.route_helper import get_current_user
 from app.common.models.icpdao.user import User, UserStatus
 from app.common.models.icpdao.icppership import Icppership, IcppershipStatus, IcppershipProgress, MentorRelationStat, \
     MentorLevel7IcpperCountStat
-from settings import ICPDAO_REDIS_LOCK_DB_CONN, ICPDAO_MINT_TOKEN_ETH_CHAIN_ID
+from app.helpers.discord import set_discord_role
+from settings import ICPDAO_REDIS_LOCK_DB_CONN, ICPDAO_MINT_TOKEN_ETH_CHAIN_ID, ICPDAO_DISCORD_GUILD, ICPDAO_DISCORD_NORMAL_ROLEID, \
+    ICPDAO_DISCORD_ICPPER_ROLEID
 
 router = APIRouter()
 
@@ -55,7 +57,7 @@ def to_icppership_dict(icppership, icpper=None, icpper_icpper_count=0) -> dict:
 
 
 @router.put('/icpperships/{icppership_id}/accept')
-async def accept(icppership_id, request: Request):
+async def accept(icppership_id, request: Request, background_tasks: BackgroundTasks):
     user = get_current_user(request)
 
     icppership = Icppership.objects(id=icppership_id).first()
@@ -116,7 +118,12 @@ async def accept(icppership_id, request: Request):
     dao = DAO.objects(owner_id=icppership.icpper_user_id).first()
     if dao or job:
         pre_icpper_to_icpper(icppership.icpper_user_id)
-
+    if user.discord_user_id:
+        background_tasks.add_task(
+            set_discord_role,
+            ICPDAO_DISCORD_GUILD,
+            user.discord_user_id, 
+            ICPDAO_DISCORD_ICPPER_ROLEID)
     return {
         "success": True,
         "data": to_icppership_dict(icppership, user)

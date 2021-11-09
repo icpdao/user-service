@@ -16,7 +16,7 @@ router = APIRouter(prefix='/app/discord')
 class DiscordLinkItem(BaseModel):
     discord_id: str
     discord_username: str
-    github_id: Optional[str]
+    # github_id: Optional[str]
 
 
 class APPDiscordResponseCode(enum.Enum):
@@ -28,9 +28,6 @@ class APPDiscordResponseCode(enum.Enum):
 
 @router.put('/bind')
 async def bind(item: DiscordLinkItem, request: Request):
-    print("=======")
-    print(request.headers)
-    print("=======")
     exist_user = User.objects(discord_user_id=item.discord_id).first()
     if exist_user:
         return {
@@ -40,26 +37,29 @@ async def bind(item: DiscordLinkItem, request: Request):
                 "role": exist_user.status
             }
         }
-    if item.github_id:
-        user = User.objects(github_user_id=int(item.github_id)).first()
-        if user:
-            user.discord_user_id = item.discord_id
-            user.discord_username = item.discord_username
-            user.save()
-            return {
-                "success": True,
-                "data": {
-                    "code": APPDiscordResponseCode.BIND.value,
-                    "role": user.status
-                }
-            }
+    # if item.github_id:
+    #     user = User.objects(github_user_id=int(item.github_id)).first()
+    #     if user:
+    #         user.discord_user_id = item.discord_id
+    #         user.discord_username = item.discord_username
+    #         user.save()
+    #         return {
+    #             "success": True,
+    #             "data": {
+    #                 "code": APPDiscordResponseCode.BIND.value,
+    #                 "role": user.status
+    #             }
+    #         }
     exist_uid = settings.ICPDAO_REDIS_LOCK_DB_CONN.get(item.discord_id)
     if exist_uid is not None:
-        random_uuid = exist_uid
+        random_uuid = str(exist_uid)
     else:
         random_uuid = uuid.uuid4().hex
         settings.ICPDAO_REDIS_LOCK_DB_CONN.setex(
-            random_uuid, 5 * 60 + 1, json.dumps({'id': item.discord_id, 'username': item.discord_username})
+            random_uuid, 5 * 60 + 1, json.dumps({
+                'id': item.discord_id,
+                'username': item.discord_username
+            })
         )
         settings.ICPDAO_REDIS_LOCK_DB_CONN.setex(item.discord_id, 5 * 60 + 1, random_uuid)
     return {
