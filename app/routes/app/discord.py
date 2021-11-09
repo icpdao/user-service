@@ -52,7 +52,7 @@ async def bind(item: DiscordLinkItem, request: Request):
     #         }
     exist_uid = settings.ICPDAO_REDIS_LOCK_DB_CONN.get(item.discord_id)
     if exist_uid is not None:
-        random_uuid = str(exist_uid)
+        random_uuid = exist_uid.decode('utf-8')
     else:
         random_uuid = uuid.uuid4().hex
         settings.ICPDAO_REDIS_LOCK_DB_CONN.setex(
