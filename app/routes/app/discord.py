@@ -105,7 +105,8 @@ async def mentor(discord_id: str):
                 "github_login": mentor_user.github_login,
                 "github_id": str(mentor_user.github_user_id),
                 'discord_username': mentor_user.discord_username,
-                'discord_id': mentor_user.discord_user_id
+                'discord_id': mentor_user.discord_user_id,
+                'progress': icppership.progress,
             }
         }
     return {"success": True, "data": {}}
@@ -122,9 +123,11 @@ async def icppers(discord_id: str):
 
     icpperships = Icppership.objects(mentor_user_id=str(user.id)).all()
     icpper_user_id_list = []
+    icpper_progress_dict = {}
     for item in icpperships:
         if item.icpper_user_id:
             icpper_user_id_list.append(item.icpper_user_id)
+            icpper_progress_dict[item.icpper_user_id] = item.progress
     icpper_users = []
     for icpper in User.objects(id__in=icpper_user_id_list):
         icpper_users.append({
@@ -132,7 +135,8 @@ async def icppers(discord_id: str):
             'github_login': icpper.github_login,
             'github_id': str(icpper.github_user_id),
             'discord_username': icpper.discord_username,
-            'discord_id': icpper.discord_user_id
+            'discord_id': icpper.discord_user_id,
+            'progress': icpper_progress_dict.get(str(icpper.id), 0)
         })
     return {"success": True, "data": icpper_users}
 
