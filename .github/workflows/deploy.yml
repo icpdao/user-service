@@ -44,6 +44,7 @@ jobs:
 
     - name: test
       env:
+        ICPDAO_APP_ENV: "TEST"
         ICPDAO_GITHUB_APP_CLIENT_ID: ${{secrets.DEV__ICPDAO_GITHUB_APP_CLIENT_ID}}
         ICPDAO_GITHUB_APP_CLIENT_SECRET: ${{secrets.DEV__ICPDAO_GITHUB_APP_CLIENT_SECRET}}
         ICPDAO_JWT_RSA_PRIVATE_KEY: ${{secrets.DEV__ICPDAO_JWT_RSA_PRIVATE_KEY}}
@@ -61,6 +62,7 @@ jobs:
         ICPDAO_DISCORD_GUILD: "xxx"
         ICPDAO_DISCORD_ICPPER_ROLEID: "xxx"
         ICPDAO_DISCORD_NORMAL_ROLEID: "xxx"
+        ICPDAO_SENTRY_DSN: ${{secrets.DEV__ICPDAO_SENTRY_DSN}}
       run: |
         npm install
         pip install -r requirements.txt
@@ -100,6 +102,7 @@ jobs:
 
     - name: deploy
       env:
+        ICPDAO_APP_ENV: "DEV"
         SERVERLESS_ACCESS_KEY: ${{secrets.SERVERLESS_ACCESS_KEY}}
         ICPDAO_GITHUB_APP_CLIENT_ID: ${{secrets.DEV__ICPDAO_GITHUB_APP_CLIENT_ID}}
         ICPDAO_GITHUB_APP_CLIENT_SECRET: ${{secrets.DEV__ICPDAO_GITHUB_APP_CLIENT_SECRET}}
@@ -118,6 +121,7 @@ jobs:
         ICPDAO_DISCORD_GUILD: "818683408958881854"
         ICPDAO_DISCORD_ICPPER_ROLEID: "846204915755515914"
         ICPDAO_DISCORD_NORMAL_ROLEID: "907654774592245800"
+        ICPDAO_SENTRY_DSN: ${{secrets.DEV__ICPDAO_SENTRY_DSN}}
       run: |
         npm install -g serverless@2.35.0
         npm install
@@ -156,6 +160,7 @@ jobs:
 
     - name: deploy
       env:
+        ICPDAO_APP_ENV: "PROD"
         SERVERLESS_ACCESS_KEY: ${{secrets.SERVERLESS_ACCESS_KEY}}
         ICPDAO_GITHUB_APP_CLIENT_ID: ${{secrets.PROD__ICPDAO_GITHUB_APP_CLIENT_ID}}
         ICPDAO_GITHUB_APP_CLIENT_SECRET: ${{secrets.PROD__ICPDAO_GITHUB_APP_CLIENT_SECRET}}
@@ -174,6 +179,7 @@ jobs:
         ICPDAO_DISCORD_GUILD: "818683408958881854"
         ICPDAO_DISCORD_ICPPER_ROLEID: "846204915755515914"
         ICPDAO_DISCORD_NORMAL_ROLEID: "907654774592245800"
+        ICPDAO_SENTRY_DSN: ${{secrets.PROD__ICPDAO_SENTRY_DSN}}
       run: |
         npm install -g serverless@2.35.0
         npm install

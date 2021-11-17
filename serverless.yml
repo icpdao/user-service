@@ -29,6 +29,8 @@ provider:
     ICPDAO_DISCORD_GUILD: ${env:ICPDAO_DISCORD_GUILD}
     ICPDAO_DISCORD_ICPPER_ROLEID: ${env:ICPDAO_DISCORD_ICPPER_ROLEID}
     ICPDAO_DISCORD_NORMAL_ROLEID: ${env:ICPDAO_DISCORD_NORMAL_ROLEID}
+    ICPDAO_APP_ENV: ${env:ICPDAO_APP_ENV}
+    ICPDAO_SENTRY_DSN: ${env:ICPDAO_SENTRY_DSN}
   region: us-east-1
   stage: ${opt:stage}
   stackName: icpdao-user-servcie-${self:provider.stage}
