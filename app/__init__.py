@@ -1,5 +1,9 @@
 import os
 
+import sentry_sdk
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+
 import settings
 
 from fastapi import FastAPI, Request
@@ -24,6 +28,16 @@ else:
         openapi_url=os.path.join(prefix, 'openapi.json')
     )
     app.include_router(api_router, prefix=prefix)
+
+
+if settings.ICPDAO_APP_ENV != "TEST":
+    sentry_sdk.init(
+        dsn=settings.ICPDAO_SENTRY_DSN,
+        environment=settings.ICPDAO_APP_ENV,
+        integrations=[AwsLambdaIntegration()],
+        traces_sample_rate=1.0
+    )
+    app.add_middleware(SentryAsgiMiddleware)
 
 
 UN_NEED_AUTH_PATH = [
