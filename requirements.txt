@@ -5,3 +5,4 @@ boto3==1.17.79
 python-dotenv==0.17.1
 redis==3.5.3
 dnspython==2.1.0
+sentry_sdk

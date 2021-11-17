@@ -105,7 +105,7 @@ async def mentor(discord_id: str):
                 "github_login": mentor_user.github_login,
                 "github_id": str(mentor_user.github_user_id),
                 'discord_username': mentor_user.discord_username,
-                'discord_id': mentor_user.discord_user_id,
+                'discord_id': mentor_user.discord_user_id or "",
                 'progress': icppership.progress,
             }
         }
