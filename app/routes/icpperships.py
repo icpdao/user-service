@@ -82,34 +82,46 @@ async def accept(icppership_id, request: Request, background_tasks: BackgroundTa
         }
 
     mentor = User.objects(id=icppership.mentor_user_id).first()
-    try:
-        with ICPDAO_REDIS_LOCK_DB_CONN.lock(LINK_MENTOR_AND_ICPPER_LOCK_KEY, timeout=5, blocking_timeout=5) as lock:
-            # 锁内操作
-            mentor_list = find_mentor_list_of_user(str(mentor.id))
-            mentor_id_list = [str(user.id) for user in mentor_list]
-            if str(user.id) in mentor_id_list:
-                return {
-                    "success": False,
-                    "errorCode": "403",
-                    "errorMessage": ICPPER_LOOP_BACK_ERROR
-                }
+    # try:
+    #     with ICPDAO_REDIS_LOCK_DB_CONN.lock(LINK_MENTOR_AND_ICPPER_LOCK_KEY, timeout=5, blocking_timeout=5) as lock:
+    #         # 锁内操作
+    #         mentor_list = find_mentor_list_of_user(str(mentor.id))
+    #         mentor_id_list = [str(user.id) for user in mentor_list]
+    #         if str(user.id) in mentor_id_list:
+    #             return {
+    #                 "success": False,
+    #                 "errorCode": "403",
+    #                 "errorMessage": ICPPER_LOOP_BACK_ERROR
+    #             }
 
-            icppership_accept(icppership, user)
-    except LockNotOwnedError:
-        # 使用锁超时了
-        icppership_cancle_accept(icppership)
+    #         icppership_accept(icppership, user)
+    # except LockNotOwnedError:
+    #     # 使用锁超时了
+    #     icppership_cancle_accept(icppership)
+    #     return {
+    #         "success": False,
+    #         "errorCode": "403",
+    #         "errorMessage": COMMON_TIMEOUT_ERROR
+    #     }
+    # except LockError:
+    #     # 没有获取到锁
+    #     return {
+    #         "success": False,
+    #         "errorCode": "403",
+    #         "errorMessage": COMMON_TIMEOUT_ERROR
+    #     }
+    ####
+    mentor_list = find_mentor_list_of_user(str(mentor.id))
+    mentor_id_list = [str(user.id) for user in mentor_list]
+    if str(user.id) in mentor_id_list:
         return {
             "success": False,
             "errorCode": "403",
-            "errorMessage": COMMON_TIMEOUT_ERROR
+            "errorMessage": ICPPER_LOOP_BACK_ERROR
         }
-    except LockError:
-        # 没有获取到锁
-        return {
-            "success": False,
-            "errorCode": "403",
-            "errorMessage": COMMON_TIMEOUT_ERROR
-        }
+
+    icppership_accept(icppership, user)
+    ####
 
     pre_icpper_to_icpper(icppership.mentor_user_id)
     update_icpper_count_stat_for_create_icppership(icppership.mentor_user_id, icppership.icpper_user_id)

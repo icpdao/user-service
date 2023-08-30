@@ -123,7 +123,7 @@ jobs:
         ICPDAO_DISCORD_NORMAL_ROLEID: "907654774592245800"
         ICPDAO_SENTRY_DSN: ${{secrets.DEV__ICPDAO_SENTRY_DSN}}
       run: |
-        npm install -g serverless@2.35.0
+        npm install -g serverless@2.72.4
         npm install
         sls deploy --stage dev
 
@@ -181,6 +181,6 @@ jobs:
         ICPDAO_DISCORD_NORMAL_ROLEID: "907654774592245800"
         ICPDAO_SENTRY_DSN: ${{secrets.PROD__ICPDAO_SENTRY_DSN}}
       run: |
-        npm install -g serverless@2.35.0
+        npm install -g serverless@2.72.4
         npm install
         sls deploy --stage prod

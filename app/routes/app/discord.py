@@ -28,15 +28,15 @@ class APPDiscordResponseCode(enum.Enum):
 
 @router.put('/bind')
 async def bind(item: DiscordLinkItem, request: Request):
-    exist_user = User.objects(discord_user_id=item.discord_id).first()
-    if exist_user:
-        return {
-            "success": True,
-            "data": {
-                "code": APPDiscordResponseCode.EXIST.value,
-                "role": exist_user.status
-            }
-        }
+    # exist_user = User.objects(discord_user_id=item.discord_id).first()
+    # if exist_user:
+    #     return {
+    #         "success": True,
+    #         "data": {
+    #             "code": APPDiscordResponseCode.EXIST.value,
+    #             "role": exist_user.status
+    #         }
+    #     }
     # if item.github_id:
     #     user = User.objects(github_user_id=int(item.github_id)).first()
     #     if user:
@@ -50,26 +50,32 @@ async def bind(item: DiscordLinkItem, request: Request):
     #                 "role": user.status
     #             }
     #         }
-    exist_uid = settings.ICPDAO_REDIS_LOCK_DB_CONN.get(item.discord_id)
-    if exist_uid is not None:
-        random_uuid = exist_uid.decode('utf-8')
-    else:
-        random_uuid = uuid.uuid4().hex
-        settings.ICPDAO_REDIS_LOCK_DB_CONN.setex(
-            random_uuid, 5 * 60 + 1, json.dumps({
-                'id': item.discord_id,
-                'username': item.discord_username
-            })
-        )
-        settings.ICPDAO_REDIS_LOCK_DB_CONN.setex(item.discord_id, 5 * 60 + 1, random_uuid)
+    # exist_uid = settings.ICPDAO_REDIS_LOCK_DB_CONN.get(item.discord_id)
+    # if exist_uid is not None:
+    #     random_uuid = exist_uid.decode('utf-8')
+    # else:
+    #     random_uuid = uuid.uuid4().hex
+    #     settings.ICPDAO_REDIS_LOCK_DB_CONN.setex(
+    #         random_uuid, 5 * 60 + 1, json.dumps({
+    #             'id': item.discord_id,
+    #             'username': item.discord_username
+    #         })
+    #     )
+    #     settings.ICPDAO_REDIS_LOCK_DB_CONN.setex(item.discord_id, 5 * 60 + 1, random_uuid)
+    # return {
+    #     "success": True,
+    #     "data": {
+    #         "code": APPDiscordResponseCode.UNBIND.value,
+    #         "bind_link": f'{settings.ICPDAO_FRONTEND_URL}/bind/discord/{random_uuid}'
+    #     }
+    # }
     return {
         "success": True,
         "data": {
-            "code": APPDiscordResponseCode.UNBIND.value,
-            "bind_link": f'{settings.ICPDAO_FRONTEND_URL}/bind/discord/{random_uuid}'
+            "code": APPDiscordResponseCode.EXIST.value,
+            "role": exist_user.status
         }
     }
-
 
 @router.put('/{discord_id}/unbind')
 async def unbind(discord_id: str):

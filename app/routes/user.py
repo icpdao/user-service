@@ -90,39 +90,44 @@ async def update_profile(request: Request, item: UpdateProfileItem):
 
 @router.put('/connect/discord/{bind_id}')
 async def discord_bind(bind_id: str, request: Request, background_tasks: BackgroundTasks):
-    bind_discord = settings.ICPDAO_REDIS_LOCK_DB_CONN.get(bind_id)
-    if bind_discord is None:
-        return {
-            "success": False,
-            "errorCode": "404",
-            "errorMessage": BIND_ACCOUNT_DISCORD_NOT_FOUND
-        }
+    # bind_discord = settings.ICPDAO_REDIS_LOCK_DB_CONN.get(bind_id)
+    # if bind_discord is None:
+    #     return {
+    #         "success": False,
+    #         "errorCode": "404",
+    #         "errorMessage": BIND_ACCOUNT_DISCORD_NOT_FOUND
+    #     }
 
-    bind_discord = bind_discord.decode('utf-8')
-    user = get_current_user(request)
-    if not user:
-        return {
-            "success": False,
-            "errorCode": "404",
-            "errorMessage": COMMON_NOT_AUTH_ERROR
-        }
+    # bind_discord = bind_discord.decode('utf-8')
+    # user = get_current_user(request)
+    # if not user:
+    #     return {
+    #         "success": False,
+    #         "errorCode": "404",
+    #         "errorMessage": COMMON_NOT_AUTH_ERROR
+    #     }
 
-    bind_discord = json.loads(bind_discord)
-    exist_user = User.objects(discord_user_id=bind_discord['id']).first()
-    if exist_user:
-        return {
-            "success": False,
-            "errorCode": "400",
-            "errorMessage": BIND_ACCOUNT_DISCORD_EXISTED
-        }
+    # bind_discord = json.loads(bind_discord)
+    # exist_user = User.objects(discord_user_id=bind_discord['id']).first()
+    # if exist_user:
+    #     return {
+    #         "success": False,
+    #         "errorCode": "400",
+    #         "errorMessage": BIND_ACCOUNT_DISCORD_EXISTED
+    #     }
 
-    user.discord_user_id = bind_discord['id']
-    user.discord_username = bind_discord['username']
-    user.save()
-    settings.ICPDAO_REDIS_LOCK_DB_CONN.delete(bind_id)
-    settings.ICPDAO_REDIS_LOCK_DB_CONN.delete(bind_discord['id'])
-    need_set_id = settings.ICPDAO_DISCORD_NORMAL_ROLEID
-    if user.status == UserStatus.ICPPER.value or user.status == UserStatus.PRE_ICPPER.value:
-        need_set_id = settings.ICPDAO_DISCORD_ICPPER_ROLEID
-    background_tasks.add_task(set_discord_role, settings.ICPDAO_DISCORD_GUILD, bind_discord['id'], need_set_id)
-    return {"success": True}
+    # user.discord_user_id = bind_discord['id']
+    # user.discord_username = bind_discord['username']
+    # user.save()
+    # settings.ICPDAO_REDIS_LOCK_DB_CONN.delete(bind_id)
+    # settings.ICPDAO_REDIS_LOCK_DB_CONN.delete(bind_discord['id'])
+    # need_set_id = settings.ICPDAO_DISCORD_NORMAL_ROLEID
+    # if user.status == UserStatus.ICPPER.value or user.status == UserStatus.PRE_ICPPER.value:
+    #     need_set_id = settings.ICPDAO_DISCORD_ICPPER_ROLEID
+    # background_tasks.add_task(set_discord_role, settings.ICPDAO_DISCORD_GUILD, bind_discord['id'], need_set_id)
+    # return {"success": True}
+    return {
+        "success": False,
+        "errorCode": "404",
+        "errorMessage": BIND_ACCOUNT_DISCORD_NOT_FOUND
+    }
